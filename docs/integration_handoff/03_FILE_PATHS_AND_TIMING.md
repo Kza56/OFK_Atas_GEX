@@ -36,24 +36,22 @@
 
 | Variable | Default value |
 |----------|---------------|
-| `{DATA_DIR}` | `C:\Users\steph\Documents\GitHub\OFK_Suite\OFK_GEX_Pipeline\data` |
+| `{DATA_DIR}` | `C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data` |
 | Override | Environment variable `GEX_DATA_DIR` |
 
 **Primary NQ file path:**
 ```
-C:\Users\steph\Documents\GitHub\OFK_Suite\OFK_GEX_Pipeline\data\full_levels_NQ.json
+C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_NQ.json
 ```
 
 **Primary ES file path:**
 ```
-C:\Users\steph\Documents\GitHub\OFK_Suite\OFK_GEX_Pipeline\data\full_levels_ES.json
+C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_ES.json
 ```
 
 ### macOS / Linux (development)
 
-| Variable | Default value |
-|----------|---------------|
-| `{DATA_DIR}` | `~/Documents/GitHub/OFK_Suite/OFK_GEX_Pipeline/data` |
+ATAS itself is Windows-only, but the Python pipeline is portable. On macOS / Linux, set `GEX_DATA_DIR` to your local data directory (any path you choose).
 
 ---
 

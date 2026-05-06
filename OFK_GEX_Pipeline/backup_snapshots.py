@@ -1,26 +1,26 @@
 """
-backup_snapshots.py — Tarball horodaté du dossier history/ vers backups/.
+backup_snapshots.py — Timestamped tarball of the history/ folder into backups/.
 
-Pourquoi : l'IVR (IV Rank) repose sur 252 jours d'historique. Si data/history/
-est supprimé/corrompu, l'IVR redevient inutilisable pendant ~1 an. Ce script
-crée un backup compressé chaque jour.
+Why: IVR (IV Rank) relies on 252 days of history. If data/history/ is
+deleted/corrupted, IVR becomes unusable for ~1 year. This script creates a
+compressed backup each day.
 
-Politique de rétention :
-- Garde les N derniers backups journaliers (défaut 30)
-- Garde 1 backup par mois (premier du mois) indéfiniment si --keep-monthly
+Retention policy:
+- Keep the last N daily backups (default 30)
+- Keep 1 backup per month (first of the month) indefinitely if --keep-monthly
 
-Usage CLI :
-  py backup_snapshots.py                    # backup + cleanup avec défauts
-  py backup_snapshots.py --retention 60     # garde 60 jours
-  py backup_snapshots.py --no-monthly       # pas d'archivage mensuel
+CLI usage:
+  py backup_snapshots.py                    # backup + cleanup with defaults
+  py backup_snapshots.py --retention 60     # keep 60 days
+  py backup_snapshots.py --no-monthly       # no monthly archiving
   py backup_snapshots.py --dry-run
 
-Usage programmatique :
+Programmatic usage:
   from backup_snapshots import make_backup, cleanup_old_backups
   make_backup()
   cleanup_old_backups(retention_days=30, keep_monthly=True)
 
-Intégré automatiquement dans run_morning_NQ/ES.py (1×/jour le matin).
+Integrated automatically in run_morning_NQ/ES.py (1×/day in the morning).
 """
 from __future__ import annotations
 
@@ -41,9 +41,9 @@ log = logging.getLogger(__name__)
 
 
 def make_backup() -> Optional[Path]:
-    """Crée un tarball horodaté des snapshots actuels. Renvoie le path ou None."""
+    """Create a timestamped tarball of current snapshots. Returns the path or None."""
     if not HISTORY_DIR.exists() or not any(HISTORY_DIR.iterdir()):
-        log.warning(f"history dir vide ou absent : {HISTORY_DIR}")
+        log.warning(f"history dir empty or missing: {HISTORY_DIR}")
         return None
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
     ts  = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -57,10 +57,10 @@ def make_backup() -> Optional[Path]:
 
 def cleanup_old_backups(retention_days: int = 30,
                          keep_monthly: bool = True) -> int:
-    """Supprime les backups journaliers > retention_days.
-    Si keep_monthly, garde le plus ancien backup de chaque mois.
+    """Remove daily backups older than retention_days.
+    If keep_monthly, keep the oldest backup of each month.
 
-    Renvoie le nombre de fichiers supprimés.
+    Returns the number of files removed.
     """
     if not BACKUP_DIR.exists():
         return 0
@@ -76,31 +76,31 @@ def cleanup_old_backups(retention_days: int = 30,
             d = datetime.strptime(m.group(1), "%Y%m%d").date()
         except ValueError:
             continue
-        # Récents → garde
+        # Recent → keep
         if d > cutoff:
             continue
-        # Anchor mensuel → garde si pas encore vu pour ce (year, month)
+        # Monthly anchor → keep if not yet seen for this (year, month)
         ym = (d.year, d.month)
         if keep_monthly and ym not in monthly_seen:
             monthly_seen.add(ym)
             continue
-        log.info(f"  cleanup : suppression {bk.name}")
+        log.info(f"  cleanup: deleting {bk.name}")
         try:
             bk.unlink()
             deleted += 1
         except OSError as e:
-            log.warning(f"  cleanup échec {bk.name}: {e}")
+            log.warning(f"  cleanup failed {bk.name}: {e}")
     return deleted
 
 
 def main():
-    p = argparse.ArgumentParser(description="Backup snapshots history (Bloc 6)")
+    p = argparse.ArgumentParser(description="Backup snapshots history (Block 6)")
     p.add_argument("--retention", type=int, default=30,
-                   help="jours de rétention pour backups journaliers (défaut 30)")
+                   help="retention days for daily backups (default 30)")
     p.add_argument("--no-monthly", action="store_true",
-                   help="ne pas garder un backup par mois")
+                   help="do not keep one backup per month")
     p.add_argument("--dry-run", action="store_true",
-                   help="affiche les actions sans rien modifier")
+                   help="show actions without modifying anything")
     args = p.parse_args()
 
     logging.basicConfig(level=logging.INFO,
@@ -111,7 +111,7 @@ def main():
         log.info("=== DRY RUN ===")
         if HISTORY_DIR.exists():
             n = sum(1 for _ in HISTORY_DIR.iterdir())
-            log.info(f"  history : {n} fichiers dans {HISTORY_DIR}")
+            log.info(f"  history: {n} files in {HISTORY_DIR}")
         if BACKUP_DIR.exists():
             cutoff = datetime.now().date() - timedelta(days=args.retention)
             for bk in sorted(BACKUP_DIR.glob("snapshots_*.tar.gz")):
@@ -124,11 +124,11 @@ def main():
 
     out = make_backup()
     if out is None:
-        log.warning("Aucun backup créé (history vide).")
+        log.warning("No backup created (history empty).")
         return
     deleted = cleanup_old_backups(retention_days=args.retention,
                                     keep_monthly=not args.no_monthly)
-    log.info(f"Cleanup : {deleted} ancien(s) backup(s) supprimé(s).")
+    log.info(f"Cleanup: {deleted} old backup(s) removed.")
 
 
 if __name__ == "__main__":

@@ -32,7 +32,7 @@ def run_briefing_ES() -> dict:
     print("Claude Agent ES — generating briefing...")
 
     result = subprocess.run(
-        f'type "{prompt_file}" | "{CLAUDE_CMD}" -p',
+        f'type "{prompt_file}" | "{CLAUDE_CMD}" -p --allowedTools Read',
         capture_output=True,
         cwd=PROJECT_DIR,
         shell=True
@@ -65,7 +65,7 @@ def run_briefing_ES() -> dict:
     out = ES_BRIEFING_JSON
     out.write_text(json.dumps(briefing, indent=2, ensure_ascii=False), encoding="utf-8")
 
-    # Versioning du briefing (pour backtest #8)
+    # Briefing versioning (for backtest #8)
     try:
         from config import HISTORY_DIR
         bdir = HISTORY_DIR / "briefings"
@@ -77,42 +77,60 @@ def run_briefing_ES() -> dict:
     except Exception:
         pass
 
-    # Résumé console
+    # Helper functions — schema-agnostic
+    def get_es(d):
+        if isinstance(d, dict):
+            return (d.get("es") or d.get("es_approx") or
+                    d.get("prix_es_approx") or d.get("es_price") or "?")
+        return d or "?"
+
+    # Console summary
     r = briefing.get("regime", {})
-    b = briefing.get("biais",  {})
+    b = briefing.get("bias", briefing.get("biais", {}))
+    p = briefing.get("rth_plan", briefing.get("plan_rth", {}))
 
     gex_label = (r.get("gex_label") or r.get("label") or "?").upper()
     gex_B     = r.get("total_gex_B") or "?"
     direction = (b.get("direction") or "?").upper()
     conviction= b.get("conviction") or "?"
-    one_liner = briefing.get("resume_une_ligne") or briefing.get("one_liner") or ""
+    one_liner = briefing.get("one_line_summary") or briefing.get("resume_une_ligne") or briefing.get("one_liner") or ""
 
-    # Contexte _meta (VIX + macro + data_quality)
+    # _meta context (VIX + macro + data_quality)
     mc = briefing.get("meta_context", {})
     vix      = mc.get("vix")
     vix_reg  = mc.get("vix_regime", "?")
     vix_term = mc.get("vix_term", "?")
     macro_bl = mc.get("macro_in_blackout", False)
-    macro_ev = mc.get("macro_next_event") or "RAS"
+    macro_ev = mc.get("macro_next_event") or "None"
     macro_mn = mc.get("macro_minutes_to_next", -1)
     data_q   = mc.get("data_quality", "?")
 
     print(f"\n{'='*62}")
-    print(f"  BRIEFING ES  —  {briefing.get('date','?')}")
+    print(f"  ES BRIEFING  —  {briefing.get('date','?')}")
     print(f"{'='*62}")
     if vix is not None:
         vix_str = f"{vix:.1f}" if isinstance(vix, (int, float)) else str(vix)
         print(f"  VIX        : {vix_str} ({vix_reg})  Term: {vix_term}")
     if macro_bl:
-        print(f"  Macro      : *** BLACKOUT EN COURS *** ({macro_ev})")
+        print(f"  Macro      : *** BLACKOUT IN PROGRESS *** ({macro_ev})")
     elif macro_mn is not None and 0 < macro_mn <= 60:
-        print(f"  Macro      : {macro_ev} dans {macro_mn}min")
-    elif macro_ev != "RAS":
-        print(f"  Macro      : prochain = {macro_ev}")
+        print(f"  Macro      : {macro_ev} in {macro_mn}min")
+    elif macro_ev != "None":
+        print(f"  Macro      : next = {macro_ev}")
     print(f"  Data       : {data_q}")
     print(f"{'─'*62}")
     print(f"  GEX Regime : {gex_label}  ({gex_B}B)")
-    print(f"  Biais      : {direction}  [{conviction}]")
+    print(f"  Bias       : {direction}  [{conviction}]")
+    print(f"{'─'*62}")
+    plan_buy  = get_es(p.get("buy_zone")             or p.get("buy_zone_es")             or p.get("zone_achat", p))
+    plan_sell = get_es(p.get("sell_zone")            or p.get("sell_zone_es")            or p.get("zone_vente", p))
+    plan_inh  = get_es(p.get("bullish_invalidation") or p.get("bullish_invalidation_es") or p.get("invalidation_haussiere", p))
+    plan_inb  = get_es(p.get("bearish_invalidation") or p.get("bearish_invalidation_es") or p.get("invalidation_baissiere", p))
+    print(f"  RTH Plan  :")
+    print(f"    Buy zone       : ES {plan_buy}")
+    print(f"    Sell zone      : ES {plan_sell}")
+    print(f"    Bullish inval. : ES {plan_inh}")
+    print(f"    Bearish inval. : ES {plan_inb}")
     print(f"  >> {one_liner}")
     print(f"{'='*62}")
     print(f"  Briefing -> {out}")

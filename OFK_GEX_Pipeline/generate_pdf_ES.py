@@ -1,5 +1,5 @@
 """
-generate_pdf_ES.py — Génère le briefing ES en PDF fond sombre
+generate_pdf_ES.py — Generates the ES briefing as a dark-theme PDF
 Usage  : py generate_pdf_ES.py
 Output : <DATA_DIR>/briefing_ES_YYYY-MM-DD.pdf  (DATA_DIR from config.py)
 """
@@ -67,7 +67,7 @@ def S(name, **kw):
 
 def es_val(d):
     if isinstance(d, dict):
-        return (d.get("es") or d.get("es_approx") or
+        return (d.get("es") or d.get("es_approx") or d.get("approx_price_es") or
                 d.get("prix_es_approx") or d.get("prix_es") or "?")
     return d or "?"
 
@@ -109,14 +109,14 @@ def build_pdf_ES(briefing: dict) -> Path:
             st.append(("LINEBELOW",(0,0),(-1,-1),0.3,C_BORDER))
         return TableStyle(st)
 
-    heure = (briefing.get("heure_generation") or "").replace(" ET","").strip()
+    heure = (briefing.get("generation_time") or briefing.get("heure_generation") or "").replace(" ET","").strip()
 
     # Header
     hdr = Table([[Paragraph("GEX AGENT — ES SCALPING BRIEFING", T_H1)]], colWidths=[W])
     hdr.setStyle(rs(BG2)); story.append(hdr)
 
     sub = Table([[Paragraph(
-        f"Session RTH  .  {date_str}  .  {heure} ET  .  ES E-mini S&P500 (CME)", T_SUB
+        f"RTH Session  .  {date_str}  .  {heure} ET  .  ES E-mini S&P500 (CME)", T_SUB
     )]], colWidths=[W])
     sub.setStyle(rs(BG3)); story.append(sub)
 
@@ -131,7 +131,7 @@ def build_pdf_ES(briefing: dict) -> Path:
     vix_reg  = (mc.get("vix_regime") or "?").upper()
     vix_term = mc.get("vix_term") or "?"
     macro_bl = mc.get("macro_in_blackout", False)
-    macro_ev = mc.get("macro_next_event") or "RAS"
+    macro_ev = mc.get("macro_next_event") or "None"
     macro_mn = mc.get("macro_minutes_to_next", -1)
     data_q   = (mc.get("data_quality") or "?").upper()
 
@@ -155,7 +155,7 @@ def build_pdf_ES(briefing: dict) -> Path:
         macro_text = f"<b>MACRO {int(macro_mn)}min</b><br/><font size=7>{macro_ev}</font>"
         macro_col, macro_bg = C_ORANGE, C_ORANGE_BG
     else:
-        macro_text = f"<b>MACRO RAS</b><br/><font size=7>{macro_ev}</font>"
+        macro_text = f"<b>MACRO CLEAR</b><br/><font size=7>{macro_ev}</font>"
         macro_col, macro_bg = C_GREEN, C_GREEN_BG
 
     data_color_map = {
@@ -199,7 +199,7 @@ def build_pdf_ES(briefing: dict) -> Path:
     gex_label  = (r.get("gex_label") or r.get("label") or "?").upper()
     net_gex    = r.get("net_gex") or 0
     gex_B      = r.get("total_gex_B") or (f"{net_gex/1e9:.2f}" if net_gex else "?")
-    impl       = r.get("implication_vol") or r.get("implication") or ""
+    impl       = r.get("vol_implication") or r.get("implication_vol") or r.get("implication") or ""
     regime_pos = gex_label in ("POSITIVE", "POSITIF")
     regime_bg  = C_GREEN_BG if regime_pos else C_RED_BG
     regime_col = C_GREEN    if regime_pos else C_RED
@@ -216,17 +216,17 @@ def build_pdf_ES(briefing: dict) -> Path:
     impl_t.setStyle(rs(BG2)); story.append(impl_t)
     story.append(Spacer(1, 2*mm))
 
-    # Biais
-    b = briefing.get("biais", briefing.get("bias", {}))
+    # Bias
+    b = briefing.get("bias", briefing.get("biais", {}))
     direction  = (b.get("direction") or "?").upper()
     conviction = b.get("conviction") or "?"
-    raison     = b.get("raison") or b.get("reason") or ""
-    biais_bg   = {"BULLISH":C_GREEN_BG,"BEARISH":C_RED_BG,"BULLISH":C_GREEN_BG,"BEARISH":C_RED_BG,"NEUTRAL":C_ORANGE_BG,"NEUTRAL":C_ORANGE_BG}.get(direction,C_ORANGE_BG)
-    biais_col  = {"BULLISH":C_GREEN,   "BEARISH":C_RED,   "BULLISH":C_GREEN,   "BEARISH":C_RED,   "NEUTRAL":C_ORANGE,   "NEUTRAL":C_ORANGE  }.get(direction,C_ORANGE)
+    raison     = b.get("reason") or b.get("raison") or ""
+    biais_bg   = {"BULLISH":C_GREEN_BG,"BEARISH":C_RED_BG,"HAUSSIER":C_GREEN_BG,"BAISSIER":C_RED_BG,"NEUTRE":C_ORANGE_BG,"NEUTRAL":C_ORANGE_BG}.get(direction,C_ORANGE_BG)
+    biais_col  = {"BULLISH":C_GREEN,   "BEARISH":C_RED,   "HAUSSIER":C_GREEN,   "BAISSIER":C_RED,   "NEUTRE":C_ORANGE,   "NEUTRAL":C_ORANGE  }.get(direction,C_ORANGE)
 
     story.append(Paragraph("DAILY BIAS", T_SECT))
     bt = Table([[
-        Paragraph(f"<b>BIAIS : {direction}</b>",
+        Paragraph(f"<b>BIAS : {direction}</b>",
             S("bl",fontName="Helvetica-Bold",fontSize=13,textColor=biais_col,leading=17)),
         Paragraph(f"conviction: <b>{conviction}</b>",
             S("bc",fontName="Helvetica",fontSize=9,textColor=biais_col,alignment=TA_RIGHT,leading=17)),
@@ -236,22 +236,28 @@ def build_pdf_ES(briefing: dict) -> Path:
     rt.setStyle(rs(BG2)); story.append(rt)
     story.append(Spacer(1, 2*mm))
 
-    # Niveaux
+    # Key levels
     story.append(Paragraph("KEY LEVELS", T_SECT))
     hdr_row = [
         Paragraph("<b>Type</b>",                 S("nh1",fontName="Helvetica-Bold",fontSize=7.5,textColor=C_WHITE)),
         Paragraph("<b>ES</b>",                   S("nh2",fontName="Helvetica-Bold",fontSize=7.5,textColor=C_WHITE,alignment=TA_CENTER)),
         Paragraph("<b>Dist.</b>",                S("nh3",fontName="Helvetica-Bold",fontSize=7.5,textColor=C_WHITE,alignment=TA_CENTER)),
-        Paragraph("<b>Comportement dealers</b>", S("nh4",fontName="Helvetica-Bold",fontSize=7.5,textColor=C_WHITE)),
+        Paragraph("<b>Dealer behavior</b>", S("nh4",fontName="Helvetica-Bold",fontSize=7.5,textColor=C_WHITE)),
     ]
     rows = [hdr_row]
-    levels_key = "niveaux" if "niveaux" in briefing else "levels"
+    levels_key = "levels" if "levels" in briefing else "niveaux"
     for i, n in enumerate(briefing.get(levels_key, [])):
         ntype = n.get("type", "?")
-        prix  = (n.get("prix_es_approx") or n.get("prix_es") or
-                 n.get("nq_price") or n.get("es_price") or "?")
-        dist  = n.get("distance_spot_pct") or n.get("distance_pct") or 0
-        compt = n.get("comportement_dealers") or n.get("dealer_behavior") or ""
+        prix  = (n.get("es_price") or n.get("approx_price_es") or
+                 n.get("prix_es_approx") or n.get("prix_es") or "?")
+        # Walk keys with `is not None` so a legitimate 0.0 isn't collapsed by `or`.
+        dist = None
+        for key in ("spot_distance_pct", "distance_spot_pct", "distance_pct"):
+            v = n.get(key)
+            if v is not None:
+                dist = v
+                break
+        compt = n.get("dealer_behavior") or n.get("comportement_dealers") or ""
         label, col = LEVEL_CFG.get(ntype, (ntype, C_WHITE))
         dist_str = f"{dist:+.2f}%" if isinstance(dist,(int,float)) else "?"
         dist_col = (C_GREEN if isinstance(dist,(int,float)) and dist > 0
@@ -280,12 +286,12 @@ def build_pdf_ES(briefing: dict) -> Path:
     niv.setStyle(TableStyle(ts)); story.append(niv)
     story.append(Spacer(1, 2*mm))
 
-    # Plan RTH
-    p = briefing.get("plan_rth", briefing.get("rth_plan", {}))
-    za = es_val(p.get("buy_zone_es")             or p.get("buy_zone_es")             or p.get("buy_zone_nq"))
-    zv = es_val(p.get("sell_zone_es")             or p.get("sell_zone_es")            or p.get("sell_zone_nq"))
-    ih = es_val(p.get("bullish_invalidation_es") or p.get("bullish_invalidation_es") or p.get("bullish_invalidation_nq"))
-    ib = es_val(p.get("bearish_invalidation_es") or p.get("bearish_invalidation_es") or p.get("bearish_invalidation_nq"))
+    # RTH plan
+    p = briefing.get("rth_plan", briefing.get("plan_rth", {}))
+    za = es_val(p.get("buy_zone")             or p.get("buy_zone_es")             or p.get("zone_achat"))
+    zv = es_val(p.get("sell_zone")            or p.get("sell_zone_es")            or p.get("zone_vente"))
+    ih = es_val(p.get("bullish_invalidation") or p.get("bullish_invalidation_es") or p.get("invalidation_haussiere"))
+    ib = es_val(p.get("bearish_invalidation") or p.get("bearish_invalidation_es") or p.get("invalidation_baissiere"))
 
     story.append(Paragraph("RTH PLAN", T_SECT))
     plan_items = [
@@ -310,8 +316,8 @@ def build_pdf_ES(briefing: dict) -> Path:
     ]))
     story.append(plan_t); story.append(Spacer(1, 2*mm))
 
-    # Alertes
-    alertes_key = "alertes_risque" if "alertes_risque" in briefing else "risk_alerts"
+    # Risk alerts
+    alertes_key = "risk_alerts" if "risk_alerts" in briefing else "alertes_risque"
     alertes = briefing.get(alertes_key, [])
     if alertes:
         story.append(Paragraph("RISK ALERTS", T_SECT))
@@ -332,8 +338,8 @@ def build_pdf_ES(briefing: dict) -> Path:
         ]))
         story.append(at); story.append(Spacer(1, 2*mm))
 
-    # Résumé
-    resume = briefing.get("resume_une_ligne") or briefing.get("one_liner") or ""
+    # One-liner
+    resume = briefing.get("one_line_summary") or briefing.get("one_liner") or briefing.get("resume_une_ligne") or ""
     if resume:
         res = Table([[Paragraph(f">>  {resume}", T_RES)]], colWidths=[W])
         res.setStyle(TableStyle([

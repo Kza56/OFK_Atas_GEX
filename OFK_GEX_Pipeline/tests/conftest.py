@@ -1,4 +1,4 @@
-"""Test configuration : ajoute le pipeline au sys.path pour les imports."""
+"""Test configuration: adds the pipeline to sys.path for imports."""
 import sys
 from pathlib import Path
 

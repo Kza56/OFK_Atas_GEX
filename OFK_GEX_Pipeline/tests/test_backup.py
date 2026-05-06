@@ -1,4 +1,4 @@
-"""Tests backup_snapshots — Bloc 6."""
+"""Tests for backup_snapshots — Block 6."""
 import os
 import tempfile
 import tarfile
@@ -32,7 +32,7 @@ def test_make_backup_creates_tarball(tmp_path, monkeypatch):
     assert out is not None
     assert out.exists()
     assert out.suffix == ".gz"
-    # Vérifier contenu
+    # Verify content
     with tarfile.open(out, "r:gz") as t:
         names = t.getnames()
     assert any("NQ_full_levels_20260101.json" in n for n in names)
@@ -44,29 +44,29 @@ def test_cleanup_keeps_recent_and_first_of_month(tmp_path, monkeypatch):
     monkeypatch.setattr(backup_snapshots, "BACKUP_DIR", backup_dir)
 
     today = datetime.now().date()
-    # Crée des fichiers : 5 récents + 5 anciens (mois différent + dispersés)
+    # Create files: 5 recent + 5 old (different month + scattered)
     files = []
-    # 3 backups journaliers récents (J-1, J-2, J-3)
+    # 3 recent daily backups (D-1, D-2, D-3)
     for d in range(1, 4):
         ts = (today - timedelta(days=d)).strftime("%Y%m%d") + "_120000"
         f = backup_dir / f"snapshots_{ts}.tar.gz"
         f.write_text("dummy"); files.append(f)
-    # 1 backup ancien hors retention default 30
+    # 1 old backup beyond default 30-day retention
     old_date = today - timedelta(days=60)
     f_old = backup_dir / f"snapshots_{old_date.strftime('%Y%m%d')}_120000.tar.gz"
     f_old.write_text("dummy"); files.append(f_old)
-    # 1 backup ancien dans un mois différent (premier du mois → garde si keep_monthly)
+    # 1 old backup in a different month (first of the month -> kept if keep_monthly)
     other_month = today.replace(day=1) - timedelta(days=45)
     f_month = backup_dir / f"snapshots_{other_month.strftime('%Y%m%d')}_120000.tar.gz"
     f_month.write_text("dummy"); files.append(f_month)
 
     deleted = backup_snapshots.cleanup_old_backups(retention_days=30,
                                                     keep_monthly=True)
-    # Au moins le f_old hors retention sans anchor mensuel devrait être supprimé
-    # Mais si f_old est le seul du mois old_date → garde aussi (keep_monthly)
-    # Vérifier que les récents sont intacts
+    # At least f_old (out of retention without a monthly anchor) should be deleted
+    # But if f_old is the only one for its month -> also kept (keep_monthly)
+    # Verify recent files are intact
     for d in range(1, 4):
         ts = (today - timedelta(days=d)).strftime("%Y%m%d") + "_120000"
-        assert (backup_dir / f"snapshots_{ts}.tar.gz").exists(), f"récent J-{d} doit rester"
-    # Le résultat exact dépend de la distribution mensuelle, mais cleanup ne crashe pas
+        assert (backup_dir / f"snapshots_{ts}.tar.gz").exists(), f"recent D-{d} must remain"
+    # The exact result depends on monthly distribution, but cleanup must not crash
     assert deleted >= 0

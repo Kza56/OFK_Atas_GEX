@@ -1,30 +1,31 @@
 """
-run_intraday_refresh.py — Fast mode pour scalping intraday.
+run_intraday_refresh.py — Fast mode for intraday scalping.
 
-Re-fetch UNIQUEMENT CBOE (rapide, gratuit, ~1s) + merge avec le dernier
-JSON CME du matin. Skip CME (lent + scrape navigateur), skip Claude
-(coûteux), skip PDF (inutile en cours de session).
+Re-fetch ONLY CBOE (fast, free, ~1s) + merge with the latest morning
+CME JSON. Skip CME (slow + browser scrape), skip Claude (expensive),
+skip PDF (unnecessary during the session).
 
-Mise à jour des métriques intraday dynamiques :
+Updates the dynamic intraday metrics:
 - atm_iv_intraday (IVx 0-7 DTE)
 - skew_25d_intraday
 - term_intraday_*
 - call_wall_intraday, put_wall_intraday
 - top_oi_intraday[]
 - max_pain_0dte, pin_strike_0dte, charm_magnet_0dte
-- IVR (recalculé)
+- IVR (recomputed)
 
-Les niveaux GEX structurels (gamma_flip, vol_trigger, walls structurels,
-charm_magnet, etc.) restent ceux du run du matin (peu changent intraday).
+Structural GEX levels (gamma_flip, vol_trigger, structural walls,
+charm_magnet, etc.) stay the same as the morning run (they barely
+change intraday).
 
 Usage:
-  py run_intraday_refresh.py NQ          # un refresh
+  py run_intraday_refresh.py NQ          # one refresh
   py run_intraday_refresh.py ES
-  py run_intraday_refresh.py NQ --loop   # boucle 5 min pendant RTH (défaut)
-  py run_intraday_refresh.py ES --loop --interval 600  # toutes les 10 min
-  py run_intraday_refresh.py NQ --loop --cme-refresh-every 6  # re-scrape CME tous les 6 cycles (≈30 min si interval=5min)
+  py run_intraday_refresh.py NQ --loop   # 5-min loop during RTH (default)
+  py run_intraday_refresh.py ES --loop --interval 600  # every 10 min
+  py run_intraday_refresh.py NQ --loop --cme-refresh-every 6  # re-scrape CME every 6 cycles (≈30 min if interval=5min)
 
-Conseil: lancer dans 2 terminaux pendant RTH (un par instrument).
+Tip: run in 2 terminals during RTH (one per instrument).
 """
 import argparse
 import json
@@ -46,15 +47,15 @@ from econ_calendar import blackout_status
 
 
 def refresh_NQ(max_dte: int = 7) -> dict:
-    """Re-fetch CBOE QQQ + merge avec dernier CME NQ JSON. Renvoie le full dict."""
+    """Re-fetch CBOE QQQ + merge with the latest CME NQ JSON. Returns the full dict."""
     from data_fetcher_NQ import build_levels
-    cboe = build_levels(max_dte=max_dte)  # écrit data/levels_NQ.json + renvoie le dict
-    vix  = fetch_vix()  # VIX + VIX9D + régime
+    cboe = build_levels(max_dte=max_dte)  # writes data/levels_NQ.json + returns the dict
+    vix  = fetch_vix()  # VIX + VIX9D + regime
     blackout = blackout_status()  # macro events ±30 min
 
     cme = json.loads(NQ_GEX_JSON.read_text()) if NQ_GEX_JSON.exists() else {}
     if not cme:
-        print("  ⚠ CME NQ JSON manquant — lance run_morning_NQ.py d'abord")
+        print("  ⚠ CME NQ JSON missing — run run_morning_NQ.py first")
         return {}
 
     nq_spot  = cme.get("spot", 0)
@@ -71,7 +72,7 @@ def refresh_NQ(max_dte: int = 7) -> dict:
         "spot_qqq"           : qqq_spot,
         "qqq_nq_ratio"       : round(ratio, 4),
 
-        # Niveaux structurels (du run matin, inchangés intraday)
+        # Structural levels (from the morning run, unchanged intraday)
         "gamma_flip"         : cme.get("gamma_flip"),
         "vol_trigger"        : cme.get("vol_trigger"),
         "call_wall"          : cme.get("call_wall"),
@@ -86,7 +87,7 @@ def refresh_NQ(max_dte: int = 7) -> dict:
         "gex_regime"         : cme.get("gex_regime"),
         "vex_regime"         : cme.get("vex_regime"),
 
-        # Structurel (CME 49d, contexte secondaire)
+        # Structural (CME 49d, secondary context)
         "atm_iv_structural"      : cme.get("atm_iv_front"),
         "iv_structural_by_dte"   : cme.get("iv_by_dte"),
         "skew_25d_structural"    : cme.get("skew_25d_front"),
@@ -96,7 +97,7 @@ def refresh_NQ(max_dte: int = 7) -> dict:
         "iv_structural_back_dte" : cme.get("iv_back_dte"),
         "iv_structural_back"     : cme.get("iv_back"),
 
-        # CBOE intraday (REFRESH ce qui change)
+        # CBOE intraday (REFRESH what changes)
         "atm_iv_intraday"        : cboe.get("atm_iv_intraday"),
         "atm_iv_intraday_dte"    : cboe.get("atm_iv_intraday_dte"),
         "atm_iv_intraday_by_dte" : cboe.get("atm_iv_intraday_by_dte"),
@@ -186,7 +187,7 @@ def refresh_NQ(max_dte: int = 7) -> dict:
         "vix_term_slope"     : vix.get("vix_term_slope"),
         "vix_dod_change"     : vix.get("vix_dod_change"),
 
-        # Macro blackout (Forex Factory ±30min événements High USD)
+        # Macro blackout (Forex Factory ±30min High-impact USD events)
         "macro_in_blackout"     : blackout.get("in_blackout", False),
         "macro_blackout_until"  : blackout.get("blackout_until_utc"),
         "macro_current_event"   : blackout.get("current_event"),
@@ -215,12 +216,12 @@ def refresh_NQ(max_dte: int = 7) -> dict:
         "zero_dte_dte"          : cboe.get("zero_dte_dte"),
     }
 
-    # IVR (recalculé sur historique)
+    # IVR (recomputed on history)
     iv_id = full.get("atm_iv_intraday")
     if iv_id and iv_id > 0:
         full["iv_rank_intraday"] = compute_iv_rank("NQ", iv_id, iv_field="atm_iv_intraday")
 
-    # Bloc 7 : versioning + health check
+    # Block 7: versioning + health check
     from config import JSON_SCHEMA_VERSION, compute_data_quality
     full["json_schema_version"] = JSON_SCHEMA_VERSION
     full["last_update_utc"]     = datetime.now(timezone.utc).isoformat()
@@ -228,13 +229,13 @@ def refresh_NQ(max_dte: int = 7) -> dict:
 
     NQ_FULL_JSON.write_text(json.dumps(full, indent=2))
 
-    # Snapshot intraday horodaté pour replay (rétention 7j)
+    # Timestamped intraday snapshot for replay (7-day retention)
     try:
         save_intraday_snapshot("NQ", full)
     except Exception as e:
         print(f"  ⚠ save_intraday_snapshot NQ: {type(e).__name__}: {e}")
 
-    # Met à jour le snapshot du jour avec open/close RTH (pour backtest)
+    # Update today's snapshot with RTH open/close (for backtest)
     if is_rth_now_et():
         update_session_log("NQ", full.get("trade_date", ""), nq_spot)
 
@@ -242,7 +243,7 @@ def refresh_NQ(max_dte: int = 7) -> dict:
 
 
 def refresh_ES(max_dte: int = 7) -> dict:
-    """Idem NQ pour ES (CBOE SPY)."""
+    """Same as NQ but for ES (CBOE SPY)."""
     from data_fetcher_ES import build_levels_ES
     cboe = build_levels_ES(max_dte=max_dte)
     vix  = fetch_vix()
@@ -250,7 +251,7 @@ def refresh_ES(max_dte: int = 7) -> dict:
 
     cme = json.loads(ES_GEX_JSON.read_text()) if ES_GEX_JSON.exists() else {}
     if not cme:
-        print("  ⚠ CME ES JSON manquant — lance run_morning_ES.py d'abord")
+        print("  ⚠ CME ES JSON missing — run run_morning_ES.py first")
         return {}
 
     es_spot  = cme.get("spot", 0)
@@ -379,7 +380,7 @@ def refresh_ES(max_dte: int = 7) -> dict:
         "vix_term_slope"     : vix.get("vix_term_slope"),
         "vix_dod_change"     : vix.get("vix_dod_change"),
 
-        # Macro blackout (Forex Factory ±30min événements High USD)
+        # Macro blackout (Forex Factory ±30min High-impact USD events)
         "macro_in_blackout"     : blackout.get("in_blackout", False),
         "macro_blackout_until"  : blackout.get("blackout_until_utc"),
         "macro_current_event"   : blackout.get("current_event"),
@@ -411,7 +412,7 @@ def refresh_ES(max_dte: int = 7) -> dict:
     if iv_id and iv_id > 0:
         full["iv_rank_intraday"] = compute_iv_rank("ES", iv_id, iv_field="atm_iv_intraday")
 
-    # Bloc 7 : versioning + health check
+    # Block 7: versioning + health check
     from config import JSON_SCHEMA_VERSION, compute_data_quality
     full["json_schema_version"] = JSON_SCHEMA_VERSION
     full["last_update_utc"]     = datetime.now(timezone.utc).isoformat()
@@ -419,13 +420,13 @@ def refresh_ES(max_dte: int = 7) -> dict:
 
     ES_FULL_JSON.write_text(json.dumps(full, indent=2))
 
-    # Snapshot intraday horodaté pour replay (rétention 7j)
+    # Timestamped intraday snapshot for replay (7-day retention)
     try:
         save_intraday_snapshot("ES", full)
     except Exception as e:
         print(f"  ⚠ save_intraday_snapshot ES: {type(e).__name__}: {e}")
 
-    # Met à jour le snapshot du jour avec open/close RTH (pour backtest)
+    # Update today's snapshot with RTH open/close (for backtest)
     if is_rth_now_et():
         update_session_log("ES", full.get("trade_date", ""), es_spot)
 
@@ -433,7 +434,7 @@ def refresh_ES(max_dte: int = 7) -> dict:
 
 
 def print_summary(full: dict, symbol: str):
-    """Résumé concis pour console (loop friendly)."""
+    """Concise console summary (loop-friendly)."""
     ts = datetime.now().strftime("%H:%M:%S")
     spot = full.get("spot_nq") or full.get("spot_es", 0)
     iv = full.get("atm_iv_intraday", 0) * 100
@@ -461,11 +462,11 @@ def refresh_one(symbol: str, max_dte: int = 7):
             print_summary(full, symbol)
     except Exception as e:
         ts = datetime.now().strftime("%H:%M:%S")
-        print(f"[{ts}] {symbol} ERREUR: {type(e).__name__}: {e}")
+        print(f"[{ts}] {symbol} ERROR: {type(e).__name__}: {e}")
 
 
 def refresh_cme(symbol: str):
-    """Re-scrape CME (lent ~60s via Playwright). Met à jour data/levels_{symbol}.json (CME-only)."""
+    """Re-scrape CME (slow ~60s via Playwright). Updates data/levels_{symbol}.json (CME-only)."""
     ts = datetime.now().strftime("%H:%M:%S")
     print(f"[{ts}] {symbol} CME re-scrape (Playwright)...")
     try:
@@ -478,24 +479,24 @@ def refresh_cme(symbol: str):
         print(f"[{ts2}] {symbol} CME re-scrape OK")
     except Exception as e:
         ts2 = datetime.now().strftime("%H:%M:%S")
-        print(f"[{ts2}] {symbol} CME ERREUR: {type(e).__name__}: {e}")
+        print(f"[{ts2}] {symbol} CME ERROR: {type(e).__name__}: {e}")
 
 
 def main():
     from logging_setup import setup_logging
     setup_logging()
-    p = argparse.ArgumentParser(description="Fast refresh CBOE intraday")
+    p = argparse.ArgumentParser(description="Fast intraday CBOE refresh")
     p.add_argument("symbol", choices=["NQ", "ES"], help="instrument")
-    p.add_argument("--loop", action="store_true", help="boucle pendant RTH")
+    p.add_argument("--loop", action="store_true", help="loop during RTH")
     p.add_argument("--interval", type=int, default=300,
-                   help="secondes entre refresh en mode loop (défaut 300 = 5 min)")
+                   help="seconds between refreshes in loop mode (default 300 = 5 min)")
     p.add_argument("--rth-only", action="store_true",
-                   help="en loop, ne refresh que pendant RTH (default: tout le temps)")
+                   help="in loop mode, only refresh during RTH (default: all the time)")
     p.add_argument("--max-dte", type=int, default=7,
-                   help="DTE max intraday. 7=cumulative ∑ (default), 0=selected ⊙ 0DTE only.")
+                   help="Max intraday DTE. 7=cumulative ∑ (default), 0=selected ⊙ 0DTE only.")
     p.add_argument("--cme-refresh-every", type=int, default=0,
-                   help="re-scrape CME (Playwright lent ~60s) tous les N cycles. "
-                        "0 = jamais (défaut). Ex: 6 avec interval=300 → CME toutes les 30 min.")
+                   help="re-scrape CME (slow Playwright ~60s) every N cycles. "
+                        "0 = never (default). E.g. 6 with interval=300 → CME every 30 min.")
     args = p.parse_args()
 
     if not args.loop:
@@ -503,15 +504,15 @@ def main():
         return
 
     cme_every = max(0, args.cme_refresh_every)
-    cme_str   = f", CME re-scrape tous les {cme_every} cycles" if cme_every > 0 else ""
-    print(f"=== Boucle intraday {args.symbol} (interval {args.interval}s, max_dte={args.max_dte}{cme_str}) ===")
-    print("CTRL+C pour arrêter.\n")
+    cme_str   = f", CME re-scrape every {cme_every} cycles" if cme_every > 0 else ""
+    print(f"=== Intraday loop {args.symbol} (interval {args.interval}s, max_dte={args.max_dte}{cme_str}) ===")
+    print("CTRL+C to stop.\n")
     cycle = 0
     try:
         while True:
             if args.rth_only and not is_rth_now_et():
                 ts = datetime.now().strftime("%H:%M:%S")
-                print(f"[{ts}] hors RTH, sleep {args.interval}s...")
+                print(f"[{ts}] outside RTH, sleep {args.interval}s...")
             else:
                 if cme_every > 0 and cycle > 0 and cycle % cme_every == 0:
                     refresh_cme(args.symbol)
@@ -519,7 +520,7 @@ def main():
                 cycle += 1
             time.sleep(args.interval)
     except KeyboardInterrupt:
-        print("\nArrêté par l'utilisateur.")
+        print("\nStopped by the user.")
 
 
 if __name__ == "__main__":

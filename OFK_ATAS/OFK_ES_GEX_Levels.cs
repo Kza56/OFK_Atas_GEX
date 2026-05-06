@@ -1,12 +1,12 @@
 // ============================================================================
 //  OFK_ES_GEX_Levels.cs — ATAS
-//  Lit full_levels_ES.json et affiche tous les niveaux GEX + Options ES.
+//  Reads full_levels_ES.json and displays all ES GEX + Options levels.
 //
-//  Niveaux chart : Gamma Flip, Vol Trigger, Call Wall, Put Wall, Risk Pivot,
-//                  Vanna Flip, Charm Magnet, Max Pain, EM High, EM Low,
-//                  Top OI #1, Top OI #2, Top OI #3
+//  Chart levels: Gamma Flip, Vol Trigger, Call Wall, Put Wall, Risk Pivot,
+//                Vanna Flip, Charm Magnet, Max Pain, EM High, EM Low,
+//                Top OI #1, Top OI #2, Top OI #3
 //
-//  Panel : GEX LEVELS (run_morning_ES.py) + Briefing (ouvre PDF ES)
+//  Panel: GEX LEVELS (run_morning_ES.py) + Briefing (opens ES PDF)
 // ============================================================================
 using System;
 using System.ComponentModel;
@@ -30,22 +30,22 @@ namespace OFK_GEX
 {
     [DisplayName("OFK ES GEX Levels")]
     [Category("OFK Suite")]
-    [Description("Niveaux Greeks Options ES. Lit full_levels_ES.json.")]
+    [Description("Greeks Options levels ES. Reads full_levels_ES.json.")]
     public class OFK_ES_GEX_Levels : Indicator
     {
         #region Snapshot
 
-        // GexSnapshot, MetaSnapshot et GexLoader sont définis dans OFK_GexShared.cs
-        // (partagés avec OFK_NQ_GEX_Levels et OFK_*_ContextScore).
+        // GexSnapshot, MetaSnapshot and GexLoader are defined in OFK_GexShared.cs
+        // (shared with OFK_NQ_GEX_Levels and OFK_*_ContextScore).
 
-        // Version du schéma JSON attendue par cet indicateur (synchro avec config.py)
+        // JSON schema version expected by this indicator (synced with config.py)
         private const string EXPECTED_JSON_SCHEMA_VERSION = "1.0";
 
         #endregion
         #region 01.Source
 
         [Display(Name = "JSON Path", GroupName = "01.Source", Order = 1)]
-        public string JsonPath { get; set; } = @"C:\Users\steph\Documents\GitHub\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_ES.json";
+        public string JsonPath { get; set; } = @"C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_ES.json";
 
         [Display(Name = "Refresh (minutes)", GroupName = "01.Source", Order = 2)]
         [Range(1, 240)]
@@ -53,262 +53,262 @@ namespace OFK_GEX
 
         #endregion
 
-        #region 02.Niveaux GEX
+        #region 02.GEX Levels
 
-        [Display(Name = "Gamma Flip",            GroupName = "02.Niveaux GEX", Order = 1)]
+        [Display(Name = "Gamma Flip",            GroupName = "02.GEX Levels", Order = 1)]
         public bool ShowGammaFlip   { get; set; } = true;
-        [Display(Name = "Vol Trigger",           GroupName = "02.Niveaux GEX", Order = 2)]
+        [Display(Name = "Vol Trigger",           GroupName = "02.GEX Levels", Order = 2)]
         public bool ShowVolTrigger  { get; set; } = true;
-        [Display(Name = "Call Wall",             GroupName = "02.Niveaux GEX", Order = 3)]
+        [Display(Name = "Call Wall",             GroupName = "02.GEX Levels", Order = 3)]
         public bool ShowCallWall    { get; set; } = true;
-        [Display(Name = "Put Wall",              GroupName = "02.Niveaux GEX", Order = 4)]
+        [Display(Name = "Put Wall",              GroupName = "02.GEX Levels", Order = 4)]
         public bool ShowPutWall     { get; set; } = true;
-        [Display(Name = "Risk Pivot (trapdoor)", GroupName = "02.Niveaux GEX", Order = 5)]
+        [Display(Name = "Risk Pivot (trapdoor)", GroupName = "02.GEX Levels", Order = 5)]
         public bool ShowRiskPivot   { get; set; } = true;
 
         #endregion
 
-        #region 02b.Niveaux INTRADAY (CBOE 0-7 DTE)
+        #region 02b.INTRADAY Levels (CBOE 0-7 DTE)
 
-        [Display(Name = "Call Wall intraday",    GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 1)]
+        [Display(Name = "Call Wall intraday",    GroupName = "02b.INTRADAY Levels (0-7d)", Order = 1)]
         public bool ShowCallWallIntraday  { get; set; } = true;
-        [Display(Name = "Put Wall intraday",     GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 2)]
+        [Display(Name = "Put Wall intraday",     GroupName = "02b.INTRADAY Levels (0-7d)", Order = 2)]
         public bool ShowPutWallIntraday   { get; set; } = true;
-        [Display(Name = "Top OI intraday #1",    GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 3)]
+        [Display(Name = "Top OI intraday #1",    GroupName = "02b.INTRADAY Levels (0-7d)", Order = 3)]
         public bool ShowTopOIIntraday1    { get; set; } = true;
-        [Display(Name = "Top OI intraday #2",    GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 4)]
+        [Display(Name = "Top OI intraday #2",    GroupName = "02b.INTRADAY Levels (0-7d)", Order = 4)]
         public bool ShowTopOIIntraday2    { get; set; } = true;
-        [Display(Name = "Top OI intraday #3",    GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 5)]
+        [Display(Name = "Top OI intraday #3",    GroupName = "02b.INTRADAY Levels (0-7d)", Order = 5)]
         public bool ShowTopOIIntraday3    { get; set; } = true;
-        [Display(Name = "cTrans (call dom.)",    GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 6,
-                 Description = "Niveau au-dessus duquel la gamma call domine (TanukiTrade-style)")]
+        [Display(Name = "cTrans (call dom.)",    GroupName = "02b.INTRADAY Levels (0-7d)", Order = 6,
+                 Description = "Level above which call gamma dominates (TanukiTrade-style)")]
         public bool ShowCTransIntraday    { get; set; } = true;
-        [Display(Name = "pTrans (put dom.)",     GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 7,
-                 Description = "Niveau en-dessous duquel la gamma put domine (TanukiTrade-style)")]
+        [Display(Name = "pTrans (put dom.)",     GroupName = "02b.INTRADAY Levels (0-7d)", Order = 7,
+                 Description = "Level below which put gamma dominates (TanukiTrade-style)")]
         public bool ShowPTransIntraday    { get; set; } = true;
-        [Display(Name = "D+ (delta+ max)",       GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 8,
-                 Description = "DEX positif max — strike où dealers achètent agressivement (bullish hedging)")]
+        [Display(Name = "D+ (delta+ max)",       GroupName = "02b.INTRADAY Levels (0-7d)", Order = 8,
+                 Description = "Max positive DEX — strike where dealers buy aggressively (bullish hedging)")]
         public bool ShowDexPlusIntraday   { get; set; } = true;
-        [Display(Name = "D- (delta- max)",       GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 9,
-                 Description = "DEX négatif max — strike où dealers vendent agressivement (bearish hedging)")]
+        [Display(Name = "D- (delta- max)",       GroupName = "02b.INTRADAY Levels (0-7d)", Order = 9,
+                 Description = "Max negative DEX — strike where dealers sell aggressively (bearish hedging)")]
         public bool ShowDexMinusIntraday  { get; set; } = true;
-        [Display(Name = "Abs GEX Ab1",           GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 10,
-                 Description = "Strike avec gamma absolue (call+put) max — pin risk fort")]
+        [Display(Name = "Abs GEX Ab1",           GroupName = "02b.INTRADAY Levels (0-7d)", Order = 10,
+                 Description = "Strike with max absolute gamma (call+put) — strong pin risk")]
         public bool ShowAbsGex1           { get; set; } = true;
-        [Display(Name = "Abs GEX Ab2",           GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 11)]
+        [Display(Name = "Abs GEX Ab2",           GroupName = "02b.INTRADAY Levels (0-7d)", Order = 11)]
         public bool ShowAbsGex2           { get; set; } = true;
-        [Display(Name = "Abs GEX Ab3",           GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 12)]
+        [Display(Name = "Abs GEX Ab3",           GroupName = "02b.INTRADAY Levels (0-7d)", Order = 12)]
         public bool ShowAbsGex3           { get; set; } = true;
-        [Display(Name = "GEX Ext #7",            GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 13,
-                 Description = "Wall supplémentaire après CW/PW principaux (TanukiTrade GEX7)")]
+        [Display(Name = "GEX Ext #7",            GroupName = "02b.INTRADAY Levels (0-7d)", Order = 13,
+                 Description = "Additional wall after main CW/PW (TanukiTrade GEX7)")]
         public bool ShowGexExt1           { get; set; } = true;
-        [Display(Name = "GEX Ext #8",            GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 14)]
+        [Display(Name = "GEX Ext #8",            GroupName = "02b.INTRADAY Levels (0-7d)", Order = 14)]
         public bool ShowGexExt2           { get; set; } = true;
-        [Display(Name = "GEX Ext #9",            GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 15)]
+        [Display(Name = "GEX Ext #9",            GroupName = "02b.INTRADAY Levels (0-7d)", Order = 15)]
         public bool ShowGexExt3           { get; set; } = true;
-        [Display(Name = "GEX Ext #10",           GroupName = "02b.Niveaux INTRADAY (0-7d)", Order = 16)]
+        [Display(Name = "GEX Ext #10",           GroupName = "02b.INTRADAY Levels (0-7d)", Order = 16)]
         public bool ShowGexExt4           { get; set; } = true;
 
         #endregion
 
-        #region 03.Niveaux VEX/CEX
+        #region 03.VEX/CEX Levels
 
-        [Display(Name = "Vanna Flip",                      GroupName = "03.Niveaux VEX/CEX", Order = 1)]
+        [Display(Name = "Vanna Flip",                      GroupName = "03.VEX/CEX Levels", Order = 1)]
         public bool ShowVannaFlip   { get; set; } = true;
-        [Display(Name = "Charm Magnet (CME 49d)",          GroupName = "03.Niveaux VEX/CEX", Order = 2)]
+        [Display(Name = "Charm Magnet (CME 49d)",          GroupName = "03.VEX/CEX Levels", Order = 2)]
         public bool ShowCharmMagnet { get; set; } = true;
 
         #endregion
 
-        #region 03b.Niveaux 0DTE (CBOE expirations du jour)
+        #region 03b.0DTE Levels (CBOE same-day expirations)
 
-        [Display(Name = "Max Pain 0DTE",      GroupName = "03b.Niveaux 0DTE", Order = 1)]
+        [Display(Name = "Max Pain 0DTE",      GroupName = "03b.0DTE Levels", Order = 1)]
         public bool ShowMaxPain0DTE     { get; set; } = true;
-        [Display(Name = "Pin Strike 0DTE",    GroupName = "03b.Niveaux 0DTE", Order = 2)]
+        [Display(Name = "Pin Strike 0DTE",    GroupName = "03b.0DTE Levels", Order = 2)]
         public bool ShowPinStrike0DTE   { get; set; } = true;
-        [Display(Name = "Charm Magnet 0DTE",  GroupName = "03b.Niveaux 0DTE", Order = 3)]
+        [Display(Name = "Charm Magnet 0DTE",  GroupName = "03b.0DTE Levels", Order = 3)]
         public bool ShowCharmMagnet0DTE { get; set; } = true;
 
         #endregion
 
-        #region 04.Niveaux Options
+        #region 04.Options Levels
 
-        [Display(Name = "Max Pain",           GroupName = "04.Niveaux Options", Order = 1)]
+        [Display(Name = "Max Pain",           GroupName = "04.Options Levels", Order = 1)]
         public bool ShowMaxPain          { get; set; } = true;
-        [Display(Name = "Expected Move High", GroupName = "04.Niveaux Options", Order = 2)]
+        [Display(Name = "Expected Move High", GroupName = "04.Options Levels", Order = 2)]
         public bool ShowExpectedMoveHigh  { get; set; } = true;
-        [Display(Name = "Expected Move Low",  GroupName = "04.Niveaux Options", Order = 3)]
+        [Display(Name = "Expected Move Low",  GroupName = "04.Options Levels", Order = 3)]
         public bool ShowExpectedMoveLow   { get; set; } = true;
-        [Display(Name = "Bande EM (fond)",    GroupName = "04.Niveaux Options", Order = 4,
-                 Description = "Bande Expected Move (TastyTrade-style, formule pondérée straddle/strangle si dispo)")]
+        [Display(Name = "EM band (fill)",     GroupName = "04.Options Levels", Order = 4,
+                 Description = "Expected Move band (TastyTrade-style, weighted straddle/strangle formula if available)")]
         public bool ShowEMZone            { get; set; } = false;
-        [Display(Name = "Opacité bande EM %", GroupName = "04.Niveaux Options", Order = 5)]
+        [Display(Name = "EM band opacity %",  GroupName = "04.Options Levels", Order = 5)]
         [Range(2, 30)]
         public int  EMBandOpacity         { get; set; } = 8;
-        [Display(Name = "Couleur bande EM",   GroupName = "04.Niveaux Options", Order = 6)]
+        [Display(Name = "EM band color",      GroupName = "04.Options Levels", Order = 6)]
         public DrawingColor EMBandColor   { get; set; } = DrawingColor.FromArgb(255, 165, 130, 90);
 
         #endregion
 
-        #region 05.Niveaux Top OI
+        #region 05.Top OI Levels
 
-        // Désactivés par défaut: Top OI structurels (toutes expirations) souvent
-        // à >5% du spot. Préférer les Top OI intraday (section 02b).
-        [Display(Name = "Top OI #1 structurel", GroupName = "05.Niveaux Top OI", Order = 1)]
+        // Disabled by default: structural Top OI (all expirations) often
+        // >5% from spot. Prefer the intraday Top OI (section 02b).
+        [Display(Name = "Top OI #1 structural", GroupName = "05.Top OI Levels", Order = 1)]
         public bool ShowTopOI1 { get; set; } = true;
-        [Display(Name = "Top OI #2 structurel", GroupName = "05.Niveaux Top OI", Order = 2)]
+        [Display(Name = "Top OI #2 structural", GroupName = "05.Top OI Levels", Order = 2)]
         public bool ShowTopOI2 { get; set; } = true;
-        [Display(Name = "Top OI #3 structurel", GroupName = "05.Niveaux Top OI", Order = 3)]
+        [Display(Name = "Top OI #3 structural", GroupName = "05.Top OI Levels", Order = 3)]
         public bool ShowTopOI3 { get; set; } = true;
 
         #endregion
 
-        #region 06.Visuel
+        #region 06.Visual
 
-        [Display(Name = "Zone pinning Call/Put Wall", GroupName = "06.Visuel", Order = 1)]
+        [Display(Name = "Pinning zone Call/Put Wall", GroupName = "06.Visual", Order = 1)]
         public bool ShowPinZone   { get; set; } = false;
-        [Display(Name = "Epaisseur lignes",           GroupName = "06.Visuel", Order = 2)]
+        [Display(Name = "Line thickness",             GroupName = "06.Visual", Order = 2)]
         [Range(1, 5)]
         public int  LineWidth     { get; set; } = 2;
-        [Display(Name = "Taille police labels",       GroupName = "06.Visuel", Order = 3)]
+        [Display(Name = "Label font size",            GroupName = "06.Visual", Order = 3)]
         [Range(7, 14)]
         public int  LabelFontSize { get; set; } = 9;
-        [Display(Name = "Opacité zone pinning %",     GroupName = "06.Visuel", Order = 4)]
+        [Display(Name = "Pinning zone opacity %",     GroupName = "06.Visual", Order = 4)]
         [Range(1, 40)]
         public int  PinZoneOpacity { get; set; } = 8;
 
         #endregion
 
-        #region 06b.Zones Gamma (TanukiTrade-style)
+        #region 06b.Gamma Zones (TanukiTrade-style)
 
-        [Display(Name = "Afficher zones gamma",       GroupName = "06b.Zones Gamma", Order = 1,
-                 Description = "Zones colorées : positive (au-dessus cTrans), transition (entre cTrans/pTrans), negative (sous pTrans), squeeze (au-dessus Call Wall / sous Put Wall).")]
+        [Display(Name = "Show gamma zones",           GroupName = "06b.Gamma Zones", Order = 1,
+                 Description = "Colored zones: positive (above cTrans), transition (between cTrans/pTrans), negative (below pTrans), squeeze (above Call Wall / below Put Wall).")]
         public bool ShowGammaZones { get; set; } = false;
 
-        [Display(Name = "Opacité zones %",            GroupName = "06b.Zones Gamma", Order = 2)]
+        [Display(Name = "Zone opacity %",             GroupName = "06b.Gamma Zones", Order = 2)]
         [Range(2, 30)]
         public int GammaZoneOpacity { get; set; } = 7;
 
-        [Display(Name = "Couleur positive gamma",     GroupName = "06b.Zones Gamma", Order = 3)]
+        [Display(Name = "Positive gamma color",       GroupName = "06b.Gamma Zones", Order = 3)]
         public DrawingColor ZonePositiveColor   { get; set; } = DrawingColor.FromArgb(255, 80, 200, 120);
-        [Display(Name = "Couleur transition",         GroupName = "06b.Zones Gamma", Order = 4)]
+        [Display(Name = "Transition color",           GroupName = "06b.Gamma Zones", Order = 4)]
         public DrawingColor ZoneTransitionColor { get; set; } = DrawingColor.FromArgb(255, 140, 140, 160);
-        [Display(Name = "Couleur negative gamma",     GroupName = "06b.Zones Gamma", Order = 5)]
+        [Display(Name = "Negative gamma color",       GroupName = "06b.Gamma Zones", Order = 5)]
         public DrawingColor ZoneNegativeColor   { get; set; } = DrawingColor.FromArgb(255, 220, 80, 80);
-        [Display(Name = "Couleur squeeze (jaune)",    GroupName = "06b.Zones Gamma", Order = 6)]
+        [Display(Name = "Squeeze color (yellow)",     GroupName = "06b.Gamma Zones", Order = 6)]
         public DrawingColor ZoneSqueezeColor    { get; set; } = DrawingColor.FromArgb(255, 240, 220, 60);
 
         #endregion
 
         #region 06c.Display fine-tuning (TanukiTrade)
 
-        [Display(Name = "Afficher labels niveaux", GroupName = "06c.Display fine-tuning", Order = 1,
-                 Description = "Si OFF, dessine les lignes sans aucun label (chart épuré).")]
+        [Display(Name = "Show level labels", GroupName = "06c.Display fine-tuning", Order = 1,
+                 Description = "If OFF, draws lines without any label (clean chart).")]
         public bool ShowLineLabels    { get; set; } = true;
 
-        [Display(Name = "Labels à droite",         GroupName = "06c.Display fine-tuning", Order = 2,
-                 Description = "Position des labels : à gauche (default) ou à droite du chart.")]
+        [Display(Name = "Labels on right",         GroupName = "06c.Display fine-tuning", Order = 2,
+                 Description = "Label position: left (default) or right of chart.")]
         public bool LabelOnRight      { get; set; } = false;
 
-        [Display(Name = "Lignes pleines",          GroupName = "06c.Display fine-tuning", Order = 3,
-                 Description = "Si ON, lignes pleines au lieu de pointillées.")]
+        [Display(Name = "Solid lines",             GroupName = "06c.Display fine-tuning", Order = 3,
+                 Description = "If ON, solid lines instead of dashed.")]
         public bool UseSolidLines     { get; set; } = false;
 
-        [Display(Name = "Opacité fond label %",    GroupName = "06c.Display fine-tuning", Order = 4)]
+        [Display(Name = "Label background opacity %", GroupName = "06c.Display fine-tuning", Order = 4)]
         [Range(20, 100)]
         public int  LabelBgOpacity    { get; set; } = 65;
 
-        [Display(Name = "Extension droite seule", GroupName = "06c.Display fine-tuning", Order = 5,
-                 Description = "Si ON, lignes dessinées uniquement depuis la barre actuelle vers la droite.")]
+        [Display(Name = "Right-side extension only", GroupName = "06c.Display fine-tuning", Order = 5,
+                 Description = "If ON, lines drawn only from the current bar to the right.")]
         public bool LineExtensionRightOnly { get; set; } = false;
 
         #endregion
 
-        #region 07.Couleurs GEX
+        #region 07.GEX Colors
 
-        [Display(Name = "Gamma Flip",   GroupName = "07.Couleurs GEX", Order = 1)]
+        [Display(Name = "Gamma Flip",   GroupName = "07.GEX Colors", Order = 1)]
         public DrawingColor GammaFlipColor   { get; set; } = DrawingColor.Yellow;
-        [Display(Name = "Vol Trigger",  GroupName = "07.Couleurs GEX", Order = 2)]
+        [Display(Name = "Vol Trigger",  GroupName = "07.GEX Colors", Order = 2)]
         public DrawingColor VolTriggerColor  { get; set; } = DrawingColor.Gold;
-        [Display(Name = "Call Wall",    GroupName = "07.Couleurs GEX", Order = 3)]
+        [Display(Name = "Call Wall",    GroupName = "07.GEX Colors", Order = 3)]
         public DrawingColor CallWallColor    { get; set; } = DrawingColor.LimeGreen;
-        [Display(Name = "Put Wall",     GroupName = "07.Couleurs GEX", Order = 4)]
+        [Display(Name = "Put Wall",     GroupName = "07.GEX Colors", Order = 4)]
         public DrawingColor PutWallColor     { get; set; } = DrawingColor.OrangeRed;
-        [Display(Name = "Risk Pivot",   GroupName = "07.Couleurs GEX", Order = 5)]
+        [Display(Name = "Risk Pivot",   GroupName = "07.GEX Colors", Order = 5)]
         public DrawingColor RiskPivotColor   { get; set; } = DrawingColor.Crimson;
-        [Display(Name = "Vanna Flip",   GroupName = "07.Couleurs GEX", Order = 6)]
+        [Display(Name = "Vanna Flip",   GroupName = "07.GEX Colors", Order = 6)]
         public DrawingColor VannaFlipColor   { get; set; } = DrawingColor.Violet;
-        [Display(Name = "Charm Magnet", GroupName = "07.Couleurs GEX", Order = 7)]
+        [Display(Name = "Charm Magnet", GroupName = "07.GEX Colors", Order = 7)]
         public DrawingColor CharmMagnetColor { get; set; } = DrawingColor.CornflowerBlue;
 
         #endregion
 
-        #region 08.Couleurs Options
+        #region 08.Options Colors
 
-        [Display(Name = "Max Pain",           GroupName = "08.Couleurs Options", Order = 1)]
+        [Display(Name = "Max Pain",           GroupName = "08.Options Colors", Order = 1)]
         public DrawingColor MaxPainColor          { get; set; } = DrawingColor.Gray;
-        [Display(Name = "Expected Move High", GroupName = "08.Couleurs Options", Order = 2)]
+        [Display(Name = "Expected Move High", GroupName = "08.Options Colors", Order = 2)]
         public DrawingColor ExpectedMoveHighColor { get; set; } = DrawingColor.MediumAquamarine;
-        [Display(Name = "Expected Move Low",  GroupName = "08.Couleurs Options", Order = 3)]
+        [Display(Name = "Expected Move Low",  GroupName = "08.Options Colors", Order = 3)]
         public DrawingColor ExpectedMoveLowColor  { get; set; } = DrawingColor.MediumAquamarine;
-        [Display(Name = "Top OI #1",          GroupName = "08.Couleurs Options", Order = 4)]
+        [Display(Name = "Top OI #1",          GroupName = "08.Options Colors", Order = 4)]
         public DrawingColor TopOI1Color           { get; set; } = DrawingColor.FromArgb(255, 100, 180, 255);
-        [Display(Name = "Top OI #2",          GroupName = "08.Couleurs Options", Order = 5)]
+        [Display(Name = "Top OI #2",          GroupName = "08.Options Colors", Order = 5)]
         public DrawingColor TopOI2Color           { get; set; } = DrawingColor.FromArgb(200, 100, 180, 255);
-        [Display(Name = "Top OI #3",          GroupName = "08.Couleurs Options", Order = 6)]
+        [Display(Name = "Top OI #3",          GroupName = "08.Options Colors", Order = 6)]
         public DrawingColor TopOI3Color           { get; set; } = DrawingColor.FromArgb(150, 100, 180, 255);
 
         #endregion
 
-        #region 08b.Couleurs INTRADAY
+        #region 08b.INTRADAY Colors
 
-        [Display(Name = "Call Wall intraday", GroupName = "08b.Couleurs INTRADAY", Order = 1)]
+        [Display(Name = "Call Wall intraday", GroupName = "08b.INTRADAY Colors", Order = 1)]
         public DrawingColor CallWallIntradayColor { get; set; } = DrawingColor.FromArgb(255, 50, 255, 100);
-        [Display(Name = "Put Wall intraday",  GroupName = "08b.Couleurs INTRADAY", Order = 2)]
+        [Display(Name = "Put Wall intraday",  GroupName = "08b.INTRADAY Colors", Order = 2)]
         public DrawingColor PutWallIntradayColor  { get; set; } = DrawingColor.FromArgb(255, 255, 80, 80);
-        [Display(Name = "Top OI intraday #1", GroupName = "08b.Couleurs INTRADAY", Order = 3)]
+        [Display(Name = "Top OI intraday #1", GroupName = "08b.INTRADAY Colors", Order = 3)]
         public DrawingColor TopOIIntraday1Color   { get; set; } = DrawingColor.FromArgb(255, 255, 220, 100);
-        [Display(Name = "Top OI intraday #2", GroupName = "08b.Couleurs INTRADAY", Order = 4)]
+        [Display(Name = "Top OI intraday #2", GroupName = "08b.INTRADAY Colors", Order = 4)]
         public DrawingColor TopOIIntraday2Color   { get; set; } = DrawingColor.FromArgb(220, 255, 220, 100);
-        [Display(Name = "Top OI intraday #3", GroupName = "08b.Couleurs INTRADAY", Order = 5)]
+        [Display(Name = "Top OI intraday #3", GroupName = "08b.INTRADAY Colors", Order = 5)]
         public DrawingColor TopOIIntraday3Color   { get; set; } = DrawingColor.FromArgb(180, 255, 220, 100);
-        [Display(Name = "cTrans intraday",    GroupName = "08b.Couleurs INTRADAY", Order = 6)]
+        [Display(Name = "cTrans intraday",    GroupName = "08b.INTRADAY Colors", Order = 6)]
         public DrawingColor CTransIntradayColor   { get; set; } = DrawingColor.FromArgb(255, 120, 220, 140);
-        [Display(Name = "pTrans intraday",    GroupName = "08b.Couleurs INTRADAY", Order = 7)]
+        [Display(Name = "pTrans intraday",    GroupName = "08b.INTRADAY Colors", Order = 7)]
         public DrawingColor PTransIntradayColor   { get; set; } = DrawingColor.FromArgb(255, 220, 140, 140);
-        [Display(Name = "D+ DEX intraday",    GroupName = "08b.Couleurs INTRADAY", Order = 8)]
-        public DrawingColor DexPlusIntradayColor  { get; set; } = DrawingColor.FromArgb(255, 0, 191, 255);  // DeepSkyBlue, distinct des Top OI bleus
-        [Display(Name = "D- DEX intraday",    GroupName = "08b.Couleurs INTRADAY", Order = 9)]
+        [Display(Name = "D+ DEX intraday",    GroupName = "08b.INTRADAY Colors", Order = 8)]
+        public DrawingColor DexPlusIntradayColor  { get; set; } = DrawingColor.FromArgb(255, 0, 191, 255);  // DeepSkyBlue, distinct from blue Top OI
+        [Display(Name = "D- DEX intraday",    GroupName = "08b.INTRADAY Colors", Order = 9)]
         public DrawingColor DexMinusIntradayColor { get; set; } = DrawingColor.FromArgb(255, 255, 105, 180); // HotPink
-        [Display(Name = "Abs GEX Ab1",        GroupName = "08b.Couleurs INTRADAY", Order = 10)]
-        public DrawingColor AbsGex1Color      { get; set; } = DrawingColor.FromArgb(255, 200, 130, 255); // violet TanukiTrade
-        [Display(Name = "Abs GEX Ab2",        GroupName = "08b.Couleurs INTRADAY", Order = 11)]
+        [Display(Name = "Abs GEX Ab1",        GroupName = "08b.INTRADAY Colors", Order = 10)]
+        public DrawingColor AbsGex1Color      { get; set; } = DrawingColor.FromArgb(255, 200, 130, 255); // TanukiTrade violet
+        [Display(Name = "Abs GEX Ab2",        GroupName = "08b.INTRADAY Colors", Order = 11)]
         public DrawingColor AbsGex2Color      { get; set; } = DrawingColor.FromArgb(220, 200, 130, 255);
-        [Display(Name = "Abs GEX Ab3",        GroupName = "08b.Couleurs INTRADAY", Order = 12)]
+        [Display(Name = "Abs GEX Ab3",        GroupName = "08b.INTRADAY Colors", Order = 12)]
         public DrawingColor AbsGex3Color      { get; set; } = DrawingColor.FromArgb(180, 200, 130, 255);
-        [Display(Name = "GEX Ext (call side)",GroupName = "08b.Couleurs INTRADAY", Order = 13,
-                 Description = "Couleur extended walls quand côté call (net GEX positif)")]
+        [Display(Name = "GEX Ext (call side)",GroupName = "08b.INTRADAY Colors", Order = 13,
+                 Description = "Extended walls color when call side (net GEX positive)")]
         public DrawingColor GexExtCallColor   { get; set; } = DrawingColor.FromArgb(180, 130, 230, 160);
-        [Display(Name = "GEX Ext (put side)", GroupName = "08b.Couleurs INTRADAY", Order = 14,
-                 Description = "Couleur extended walls quand côté put (net GEX négatif)")]
+        [Display(Name = "GEX Ext (put side)", GroupName = "08b.INTRADAY Colors", Order = 14,
+                 Description = "Extended walls color when put side (net GEX negative)")]
         public DrawingColor GexExtPutColor    { get; set; } = DrawingColor.FromArgb(180, 230, 130, 130);
 
         #endregion
 
-        #region 08c.Couleurs 0DTE
+        #region 08c.0DTE Colors
 
-        [Display(Name = "Max Pain 0DTE",     GroupName = "08c.Couleurs 0DTE", Order = 1)]
+        [Display(Name = "Max Pain 0DTE",     GroupName = "08c.0DTE Colors", Order = 1)]
         public DrawingColor MaxPain0DTEColor     { get; set; } = DrawingColor.FromArgb(255, 200, 200, 200);
-        [Display(Name = "Pin Strike 0DTE",   GroupName = "08c.Couleurs 0DTE", Order = 2)]
+        [Display(Name = "Pin Strike 0DTE",   GroupName = "08c.0DTE Colors", Order = 2)]
         public DrawingColor PinStrike0DTEColor   { get; set; } = DrawingColor.FromArgb(255, 255, 165, 0);
-        [Display(Name = "Charm Magnet 0DTE", GroupName = "08c.Couleurs 0DTE", Order = 3)]
+        [Display(Name = "Charm Magnet 0DTE", GroupName = "08c.0DTE Colors", Order = 3)]
         public DrawingColor CharmMagnet0DTEColor { get; set; } = DrawingColor.FromArgb(255, 200, 100, 255);
 
         #endregion
 
-        #region 09.Panel flottant
+        #region 09.Floating Panel
 
-        [Display(Name = "Afficher panneau", GroupName = "09.Panel flottant", Order = 1)]
+        [Display(Name = "Show panel", GroupName = "09.Floating Panel", Order = 1)]
         public bool ShowPanel
         {
             get => _showPanel;
@@ -324,99 +324,99 @@ namespace OFK_GEX
         }
         private bool _showPanel = true;
 
-        [Display(Name = "Chemin Python (exe)", GroupName = "09.Panel flottant", Order = 2)]
+        [Display(Name = "Python path (exe)", GroupName = "09.Floating Panel", Order = 2)]
         public string PythonExePath { get; set; } = "python.exe";
 
-        [Display(Name = "Chemin script .py", GroupName = "09.Panel flottant", Order = 3)]
-        public string ScriptPath { get; set; } = @"C:\Users\steph\Documents\GitHub\OFK_Atas_GEX\OFK_GEX_Pipeline\run_morning_ES.py";
+        [Display(Name = "Script .py path", GroupName = "09.Floating Panel", Order = 3)]
+        public string ScriptPath { get; set; } = @"C:\OFK_Atas_GEX\OFK_GEX_Pipeline\run_morning_ES.py";
 
-        [Display(Name = "Dossier PDF briefing", GroupName = "09.Panel flottant", Order = 4)]
-        public string BriefingDir { get; set; } = @"C:\Users\steph\Documents\GitHub\OFK_Atas_GEX\OFK_GEX_Pipeline\data";
+        [Display(Name = "Briefing PDF folder", GroupName = "09.Floating Panel", Order = 4)]
+        public string BriefingDir { get; set; } = @"C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data";
 
-        [Display(Name = "Script intraday refresh", GroupName = "09.Panel flottant", Order = 5,
-                 Description = "Script .py lancé en background quand 'Loop intraday' est ON")]
-        public string IntradayRefreshScriptPath { get; set; } = @"C:\Users\steph\Documents\GitHub\OFK_Atas_GEX\OFK_GEX_Pipeline\run_intraday_refresh.py";
+        [Display(Name = "Intraday refresh script", GroupName = "09.Floating Panel", Order = 5,
+                 Description = "Background .py script launched when 'Intraday loop' is ON")]
+        public string IntradayRefreshScriptPath { get; set; } = @"C:\OFK_Atas_GEX\OFK_GEX_Pipeline\run_intraday_refresh.py";
 
         #endregion
 
-        #region 10.Alertes scalping
+        #region 10.Scalping Alerts
 
-        [Display(Name = "Sound file (.wav)", GroupName = "10.Alertes scalping", Order = 1,
-                 Description = "Fichier audio joué lors d'une alerte (alert1.wav, alert2.wav, …)")]
+        [Display(Name = "Sound file (.wav)", GroupName = "10.Scalping Alerts", Order = 1,
+                 Description = "Audio file played for alerts (alert1.wav, alert2.wav, …)")]
         public string AlertSoundFile { get; set; } = "alert1.wav";
 
-        [Display(Name = "Alertes scalping activées", GroupName = "10.Alertes scalping", Order = 2)]
+        [Display(Name = "Scalping alerts enabled", GroupName = "10.Scalping Alerts", Order = 2)]
         public bool EnableScalpingAlerts { get; set; } = true;
 
-        [Display(Name = "Cooldown alerte (s)", GroupName = "10.Alertes scalping", Order = 3,
-                 Description = "Durée minimale entre deux alertes du même type")]
+        [Display(Name = "Alert cooldown (s)", GroupName = "10.Scalping Alerts", Order = 3,
+                 Description = "Minimum duration between two alerts of the same type")]
         [Range(10, 3600)]
         public int AlertCooldownSeconds { get; set; } = 120;
 
-        [Display(Name = "Proximité ticks (Pin/Charm)", GroupName = "10.Alertes scalping", Order = 4)]
+        [Display(Name = "Proximity ticks (Pin/Charm)", GroupName = "10.Scalping Alerts", Order = 4)]
         [Range(1, 100)]
         public int AlertProximityTicks { get; set; } = 5;
 
-        [Display(Name = "Alertes prédictives (approche cross)", GroupName = "10.Alertes scalping", Order = 5,
-                 Description = "Déclenche une alerte AVANT que le prix traverse un niveau (gamma flip, walls, trans, vol flow)")]
+        [Display(Name = "Predictive alerts (cross approach)", GroupName = "10.Scalping Alerts", Order = 5,
+                 Description = "Triggers an alert BEFORE price crosses a level (gamma flip, walls, trans, vol flow)")]
         public bool EnablePredictiveAlerts { get; set; } = true;
 
-        [Display(Name = "Proximité prédictive (ticks)", GroupName = "10.Alertes scalping", Order = 6,
-                 Description = "Distance au niveau pour déclencher l'alerte d'approche")]
+        [Display(Name = "Predictive proximity (ticks)", GroupName = "10.Scalping Alerts", Order = 6,
+                 Description = "Distance to level to trigger the approach alert")]
         [Range(1, 100)]
         public int PredictiveAlertProximityTicks { get; set; } = 10;
 
-        [Display(Name = "1. Cross Gamma Flip", GroupName = "10.Alertes scalping", Order = 10)]
+        [Display(Name = "1. Cross Gamma Flip", GroupName = "10.Scalping Alerts", Order = 10)]
         public bool AlertCrossGammaFlip { get; set; } = true;
 
-        [Display(Name = "2. Cross Call/Put Wall (intraday)", GroupName = "10.Alertes scalping", Order = 11)]
+        [Display(Name = "2. Cross Call/Put Wall (intraday)", GroupName = "10.Scalping Alerts", Order = 11)]
         public bool AlertCrossWalls { get; set; } = true;
 
-        [Display(Name = "3. Cross cTrans/pTrans", GroupName = "10.Alertes scalping", Order = 12)]
+        [Display(Name = "3. Cross cTrans/pTrans", GroupName = "10.Scalping Alerts", Order = 12)]
         public bool AlertCrossTrans { get; set; } = true;
 
-        [Display(Name = "4. Approche Pin Strike 0DTE", GroupName = "10.Alertes scalping", Order = 13)]
+        [Display(Name = "4. Pin Strike 0DTE approach", GroupName = "10.Scalping Alerts", Order = 13)]
         public bool AlertPin0DTE { get; set; } = true;
 
-        [Display(Name = "5. Approche Charm Magnet (last hour)", GroupName = "10.Alertes scalping", Order = 14)]
+        [Display(Name = "5. Charm Magnet approach (last hour)", GroupName = "10.Scalping Alerts", Order = 14)]
         public bool AlertCharmMagnet { get; set; } = true;
 
-        [Display(Name = "6. IVR extrême au load (>90 ou <10)", GroupName = "10.Alertes scalping", Order = 15)]
+        [Display(Name = "6. Extreme IVR on load (>90 or <10)", GroupName = "10.Scalping Alerts", Order = 15)]
         public bool AlertIvrExtreme { get; set; } = true;
 
-        [Display(Name = "7. Term backwardation aigu (>1vp)", GroupName = "10.Alertes scalping", Order = 16)]
+        [Display(Name = "7. Acute term backwardation (>1vp)", GroupName = "10.Scalping Alerts", Order = 16)]
         public bool AlertTermBackwardation { get; set; } = true;
 
-        [Display(Name = "8. Skew explosif (>5vp)", GroupName = "10.Alertes scalping", Order = 17)]
+        [Display(Name = "8. Explosive skew (>5vp)", GroupName = "10.Scalping Alerts", Order = 17)]
         public bool AlertSkewExplosive { get; set; } = true;
 
-        [Display(Name = "9. VIX entrée régime EXTREME", GroupName = "10.Alertes scalping", Order = 18)]
+        [Display(Name = "9. VIX enters EXTREME regime", GroupName = "10.Scalping Alerts", Order = 18)]
         public bool AlertVixRegimeChange { get; set; } = true;
 
-        [Display(Name = "10. Volume Flow breach (GEX ext)", GroupName = "10.Alertes scalping", Order = 19)]
+        [Display(Name = "10. Volume Flow breach (GEX ext)", GroupName = "10.Scalping Alerts", Order = 19)]
         public bool AlertVolumeFlowBreach { get; set; } = true;
 
-        [Display(Name = "11. Blackout macro imminent (<30min)", GroupName = "10.Alertes scalping", Order = 20)]
+        [Display(Name = "11. Imminent macro blackout (<30min)", GroupName = "10.Scalping Alerts", Order = 20)]
         public bool AlertMacroBlackout { get; set; } = true;
 
-        [Display(Name = "12. Données obsolètes (>10min)", GroupName = "10.Alertes scalping", Order = 21)]
+        [Display(Name = "12. Stale data (>10min)", GroupName = "10.Scalping Alerts", Order = 21)]
         public bool AlertStaleData { get; set; } = true;
 
-        [Display(Name = "Bannière on-chart", GroupName = "11.Alertes visuelles", Order = 0,
-                 Description = "Affiche les alertes directement sur le chart (coin haut-droit)")]
+        [Display(Name = "On-chart banner", GroupName = "11.Visual Alerts", Order = 1,
+                 Description = "Displays alerts directly on the chart (top-right corner)")]
         public bool EnableVisualBanners { get; set; } = true;
 
-        [Display(Name = "Durée bannière (s)", GroupName = "11.Alertes visuelles", Order = 1)]
+        [Display(Name = "Banner duration (s)", GroupName = "11.Visual Alerts", Order = 2)]
         [Range(5, 300)]
         public int BannerDurationSeconds { get; set; } = 30;
 
-        [Display(Name = "Max bannières affichées", GroupName = "11.Alertes visuelles", Order = 2)]
+        [Display(Name = "Max banners displayed", GroupName = "11.Visual Alerts", Order = 3)]
         [Range(1, 10)]
         public int MaxVisibleBanners { get; set; } = 5;
 
-        [Display(Name = "Dossier snapshots intraday", GroupName = "12.Replay intraday", Order = 1,
-                 Description = "Chemin vers le dossier des snapshots horodatés (5 min) pour le replay")]
-        public string IntradayHistoryDir { get; set; } = @"C:\Users\steph\Documents\GitHub\OFK_Atas_GEX\OFK_GEX_Pipeline\data\history\intraday";
+        [Display(Name = "Intraday snapshots folder", GroupName = "12.Intraday Replay", Order = 1,
+                 Description = "Path to folder of timestamped snapshots (5 min) for replay")]
+        public string IntradayHistoryDir { get; set; } = @"C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data\history\intraday";
 
         #endregion
 
@@ -428,18 +428,18 @@ namespace OFK_GEX
         private bool     _levelsLoaded = false;
         private DateTime _lastLoadTime = DateTime.MinValue;
 
-        // Replay intraday
+        // Intraday replay
         private volatile bool _replayMode = false;
         private DateTime      _replayTimestamp = DateTime.MinValue;
         private Window        _replayWindow = null;
         private Button        _btnReplay = null;
 
-        // Loop intraday refresh (background process)
+        // Intraday loop refresh (background process)
         private Process?      _loopProcess = null;
         private volatile bool _loopRunning = false;
         private Button        _btnLoop = null;
 
-        // Anti-spam alertes : key → dernière émission
+        // Alert anti-spam: key → last emission
         private readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTime> _lastAlerts = new();
         private string _lastVixRegime = "";
 
@@ -452,15 +452,15 @@ namespace OFK_GEX
         private readonly System.Collections.Generic.List<BannerEntry> _banners = new();
         private readonly object _bannerSync = new object();
 
-        // Stats alertes (compteurs jour + 7 derniers jours)
+        // Alert stats (day + last 7 days counters)
         private readonly System.Collections.Generic.Dictionary<string, (int today, int week)> _alertStats = new();
         private readonly object _alertStatsSync = new object();
         private const string AlertLogFileName = "alerts_log_ES.txt";
 
-        // État hystérésis alertes prédictives (true = dans la zone de proximité)
+        // Predictive alerts hysteresis state (true = within proximity zone)
         private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _approachState = new();
 
-        // Font géré dynamiquement via GetLabelFont() qui respecte LabelFontSize.
+        // Font managed dynamically via GetLabelFont() which respects LabelFontSize.
 
         private Window    _panelWindow = null;
         private TextBlock _infoText    = null;
@@ -499,11 +499,11 @@ namespace OFK_GEX
                              (DateTime.Now - _lastLoadTime).TotalMinutes >= RefreshMinutes;
             if (isLastBar && (newDay || elapsed)) { LoadLevels(); UpdatePanelText(); }
 
-            // Alertes scalping (live bar uniquement)
+            // Scalping alerts (live bar only)
             if (isLastBar && EnableScalpingAlerts) CheckAlerts(bar);
         }
 
-        // ── Alertes scalping (Bloc 4) ────────────────────────────────────────
+        // ── Scalping alerts (Block 4) ────────────────────────────────────────
         private void CheckAlerts(int bar)
         {
             if (!_levelsLoaded || bar < 1 || bar >= CurrentBar) return;
@@ -520,26 +520,26 @@ namespace OFK_GEX
 
             if (AlertCrossGammaFlip && CrossDetected(prevClose, currClose, (decimal)lv.GammaFlip))
                 FireAlert("gamma_flip",
-                    $"ES {currClose:0} traverse Gamma Flip {lv.GammaFlip:0} — changement régime gamma",
+                    $"ES {currClose:0} crosses Gamma Flip {lv.GammaFlip:0} — gamma regime change",
                     curr);
 
             if (AlertCrossWalls)
             {
                 if (CrossDetected(prevClose, currClose, (decimal)lv.CallWallIntraday))
-                    FireAlert("call_wall_id", $"ES traverse Call Wall intraday {lv.CallWallIntraday:0}", curr);
+                    FireAlert("call_wall_id", $"ES crosses Call Wall intraday {lv.CallWallIntraday:0}", curr);
                 if (CrossDetected(prevClose, currClose, (decimal)lv.PutWallIntraday))
-                    FireAlert("put_wall_id", $"ES traverse Put Wall intraday {lv.PutWallIntraday:0}", curr);
+                    FireAlert("put_wall_id", $"ES crosses Put Wall intraday {lv.PutWallIntraday:0}", curr);
             }
 
             if (AlertCrossTrans)
             {
                 if (CrossDetected(prevClose, currClose, (decimal)lv.CTransIntraday))
-                    FireAlert("c_trans", $"ES traverse cTrans {lv.CTransIntraday:0} — changement zone gamma", curr);
+                    FireAlert("c_trans", $"ES crosses cTrans {lv.CTransIntraday:0} — gamma zone change", curr);
                 if (CrossDetected(prevClose, currClose, (decimal)lv.PTransIntraday))
-                    FireAlert("p_trans", $"ES traverse pTrans {lv.PTransIntraday:0} — changement zone gamma", curr);
+                    FireAlert("p_trans", $"ES crosses pTrans {lv.PTransIntraday:0} — gamma zone change", curr);
             }
 
-            // Alertes prédictives (approche avant cross)
+            // Predictive alerts (approach before cross)
             if (EnablePredictiveAlerts)
             {
                 if (AlertCrossGammaFlip)
@@ -563,7 +563,7 @@ namespace OFK_GEX
                 decimal dist = Math.Abs(currClose - (decimal)lv.PinStrike0DTE);
                 if (dist <= AlertProximityTicks * tick)
                     FireAlert("pin_0dte",
-                        $"ES proche Pin Strike 0DTE {lv.PinStrike0DTE:0} (±{AlertProximityTicks}t)",
+                        $"ES near Pin Strike 0DTE {lv.PinStrike0DTE:0} (±{AlertProximityTicks}t)",
                         curr);
             }
 
@@ -572,7 +572,7 @@ namespace OFK_GEX
                 decimal dist = Math.Abs(currClose - (decimal)lv.CharmMagnet0DTE);
                 if (dist <= AlertProximityTicks * tick * 3)
                     FireAlert("charm_magnet",
-                        $"ES approche Charm Magnet 0DTE {lv.CharmMagnet0DTE:0} (last hour)",
+                        $"ES approaching Charm Magnet 0DTE {lv.CharmMagnet0DTE:0} (last hour)",
                         curr);
             }
 
@@ -580,45 +580,45 @@ namespace OFK_GEX
                 && (lv.IvRankIntradayStatus == "ok" || lv.IvRankIntradayStatus == "partial"))
             {
                 if (lv.IvRankIntraday > 90)
-                    FireAlert("ivr_high", $"IVR très élevée {lv.IvRankIntraday:0}% — vol haute, élargir stops", curr);
+                    FireAlert("ivr_high", $"IVR very high {lv.IvRankIntraday:0}% — high vol, widen stops", curr);
                 else if (lv.IvRankIntraday < 10)
-                    FireAlert("ivr_low", $"IVR très faible {lv.IvRankIntraday:0}% — vol comprimée, range serré", curr);
+                    FireAlert("ivr_low", $"IVR very low {lv.IvRankIntraday:0}% — compressed vol, tight range", curr);
             }
 
             if (AlertTermBackwardation && lv.TermIntradaySlope > 0.01)
                 FireAlert("term_back",
-                    $"Term backwardation aigu (slope +{lv.TermIntradaySlope * 100:0.0}vp) — STRESS, breakouts",
+                    $"Acute term backwardation (slope +{lv.TermIntradaySlope * 100:0.0}vp) — STRESS, breakouts",
                     curr);
 
             if (AlertSkewExplosive && lv.Skew25dIntraday > 0.05)
                 FireAlert("skew_high",
-                    $"Skew 25Δ explosif {lv.Skew25dIntraday * 100:0.0}vp — protection puts agressive",
+                    $"Explosive Skew 25Δ {lv.Skew25dIntraday * 100:0.0}vp — aggressive put protection",
                     curr);
 
             if (AlertVixRegimeChange && _meta.Loaded && !string.IsNullOrEmpty(_meta.VixRegime))
             {
                 if (_meta.VixRegime != _lastVixRegime && _meta.VixRegime == "extreme")
                     FireAlert("vix_extreme",
-                        $"VIX régime EXTREME ({_meta.Vix:0.0}, DoD {_meta.VixDodChange:+0.0;-0.0;0}) — fuir le scalping",
+                        $"VIX EXTREME regime ({_meta.Vix:0.0}, DoD {_meta.VixDodChange:+0.0;-0.0;0}) — avoid scalping",
                         curr);
                 _lastVixRegime = _meta.VixRegime;
             }
 
             if (AlertVolumeFlowBreach && lv.GexExt1 > 0 &&
                 CrossDetected(prevClose, currClose, (decimal)lv.GexExt1))
-                FireAlert("vol_flow", $"ES traverse GEX ext-1 {lv.GexExt1:0} — flux directionnel", curr);
+                FireAlert("vol_flow", $"ES crosses GEX ext-1 {lv.GexExt1:0} — directional flow", curr);
 
             if (AlertMacroBlackout && _meta.Loaded &&
                 _meta.MacroMinutesToNext > 0 && _meta.MacroMinutesToNext <= 30)
                 FireAlert("macro_imminent",
-                    $"Événement macro {_meta.MacroNextEventTitle} dans {_meta.MacroMinutesToNext}min — STOP scalping",
+                    $"Macro event {_meta.MacroNextEventTitle} in {_meta.MacroMinutesToNext}min — STOP scalping",
                     curr);
 
             if (AlertStaleData)
             {
-                // Stale = le JSON sur disque n'a pas été régénéré depuis >10min,
-                // mais uniquement si Loop intraday est ON (sinon le user gère
-                // son refresh manuellement → pas la peine de spammer).
+                // Stale = the JSON on disk has not been regenerated for >10min,
+                // but only if Intraday loop is ON (otherwise the user manages
+                // their refresh manually → no need to spam).
                 if (_loopRunning)
                 {
                     try
@@ -628,7 +628,7 @@ namespace OFK_GEX
                             var ageMin = (DateTime.Now - File.GetLastWriteTime(JsonPath)).TotalMinutes;
                             if (ageMin > 10)
                                 FireAlert("stale_data",
-                                    $"Loop intraday actif mais JSON figé ({(int)ageMin}min) — vérifier le process Python",
+                                    $"Intraday loop active but JSON frozen ({(int)ageMin}min) — check the Python process",
                                     curr);
                         }
                     }
@@ -636,16 +636,16 @@ namespace OFK_GEX
                 }
                 if (_meta.Loaded && _meta.DataQuality == "partial")
                     FireAlert("data_partial",
-                        $"Données pipeline PARTIELLES (CME ou CBOE manquant) — qualité dégradée",
+                        $"Pipeline data PARTIAL (CME or CBOE missing) — degraded quality",
                         curr);
                 if (_meta.Loaded && _meta.DataQuality == "error")
                     FireAlert("data_error",
-                        $"Données pipeline en ERREUR — pas de levels valides",
+                        $"Pipeline data ERROR — no valid levels",
                         curr);
                 if (_meta.Loaded && !string.IsNullOrEmpty(_meta.JsonSchemaVersion) &&
                     _meta.JsonSchemaVersion != EXPECTED_JSON_SCHEMA_VERSION)
                     FireAlert("schema_mismatch",
-                        $"JSON schema {_meta.JsonSchemaVersion} ≠ attendu {EXPECTED_JSON_SCHEMA_VERSION} — pipeline désynchro indicateur",
+                        $"JSON schema {_meta.JsonSchemaVersion} ≠ expected {EXPECTED_JSON_SCHEMA_VERSION} — pipeline schema desync vs indicator",
                         curr);
             }
         }
@@ -656,7 +656,7 @@ namespace OFK_GEX
             return (prev < level && curr >= level) || (prev > level && curr <= level);
         }
 
-        // Alerte prédictive avec hystérésis : déclenche à l'entrée dans la zone, reset à la sortie élargie
+        // Predictive alert with hysteresis: triggers on zone entry, resets on widened exit
         private void CheckApproach(string baseKey, decimal price, decimal level, decimal tick, IndicatorCandle candle, string instrumentLabel, string levelLabel)
         {
             if (level <= 0 || !EnablePredictiveAlerts) return;
@@ -670,7 +670,7 @@ namespace OFK_GEX
             if (dist <= proximity && !wasInZone)
             {
                 int distTicks = (int)(dist / tick);
-                FireAlert(key, $"{instrumentLabel} approche {levelLabel} {level:F0} (à {distTicks} ticks)", candle);
+                FireAlert(key, $"{instrumentLabel} approaching {levelLabel} {level:F0} (at {distTicks} ticks)", candle);
                 _approachState[key] = true;
             }
             else if (dist > exitThreshold && wasInZone)
@@ -714,7 +714,7 @@ namespace OFK_GEX
                     }
                 }
 
-                // Log fichier append (Bloc 8 stats) — historique consultable hors session
+                // File log append (Block 8 stats) — history readable outside session
                 try
                 {
                     string dir = Path.GetDirectoryName(JsonPath) ?? "";
@@ -724,7 +724,7 @@ namespace OFK_GEX
                 }
                 catch { /* log file optional */ }
             }
-            catch { /* AddAlert signature peut varier selon version ATAS */ }
+            catch { /* AddAlert signature can vary across ATAS versions */ }
         }
 
         private static DrawingColor GetBannerColor(string key)
@@ -740,16 +740,16 @@ namespace OFK_GEX
             return DrawingColor.FromArgb(255, 255, 200, 0);
         }
 
-        // ── Position sizing dynamique (VIX × macro × data_quality) ──────────
+        // ── Dynamic position sizing (VIX × macro × data_quality) ────────────
         private static (int pct, string reason, string tag) ComputePositionSizing(MetaSnapshot meta)
         {
             if (!meta.Loaded)
-                return (100, "Pas de contexte _meta — sizing par défaut", "OK");
+                return (100, "No _meta context — default sizing", "OK");
 
             double pct = 1.0;
             var reasons = new System.Collections.Generic.List<string>();
 
-            // VIX régime
+            // VIX regime
             if (meta.VixRegime == "extreme")  { pct *= 0.25; reasons.Add($"VIX EXTREME ({meta.Vix:F1})"); }
             else if (meta.VixRegime == "elevated") { pct *= 0.60; reasons.Add($"VIX elevated ({meta.Vix:F1})"); }
 
@@ -757,30 +757,30 @@ namespace OFK_GEX
             if (meta.MacroInBlackout)
             {
                 pct = 0.0;
-                reasons.Add("BLACKOUT macro EN COURS");
+                reasons.Add("MACRO BLACKOUT IN PROGRESS");
             }
             else if (meta.MacroMinutesToNext > 0 && meta.MacroMinutesToNext <= 30)
             {
                 pct = 0.0;
-                string ev = string.IsNullOrEmpty(meta.MacroNextEventTitle) ? "event macro" : meta.MacroNextEventTitle;
-                reasons.Add($"{ev} dans {meta.MacroMinutesToNext}min");
+                string ev = string.IsNullOrEmpty(meta.MacroNextEventTitle) ? "macro event" : meta.MacroNextEventTitle;
+                reasons.Add($"{ev} in {meta.MacroMinutesToNext}min");
             }
             else if (meta.MacroMinutesToNext > 0 && meta.MacroMinutesToNext <= 60)
             {
                 pct *= 0.50;
-                string ev = string.IsNullOrEmpty(meta.MacroNextEventTitle) ? "event macro" : meta.MacroNextEventTitle;
-                reasons.Add($"{ev} dans {meta.MacroMinutesToNext}min");
+                string ev = string.IsNullOrEmpty(meta.MacroNextEventTitle) ? "macro event" : meta.MacroNextEventTitle;
+                reasons.Add($"{ev} in {meta.MacroMinutesToNext}min");
             }
 
             // Data quality
-            if (meta.DataQuality == "error")   { pct = 0.0; reasons.Add("Données pipeline EN ERREUR"); }
-            else if (meta.DataQuality == "partial") { pct *= 0.70; reasons.Add("Données partielles"); }
+            if (meta.DataQuality == "error")   { pct = 0.0; reasons.Add("Pipeline data ERROR"); }
+            else if (meta.DataQuality == "partial") { pct *= 0.70; reasons.Add("Partial data"); }
 
             int finalPct = (int)Math.Round(Math.Max(0.0, Math.Min(1.0, pct)) * 100);
-            string reason = reasons.Count > 0 ? string.Join(", ", reasons) : "Conditions normales";
+            string reason = reasons.Count > 0 ? string.Join(", ", reasons) : "Normal conditions";
             string tag = finalPct >= 80 ? "OK"
-                       : finalPct >= 50 ? "PRUDENCE"
-                       : finalPct > 0   ? "FORTE PRUDENCE"
+                       : finalPct >= 50 ? "CAUTION"
+                       : finalPct > 0   ? "HIGH CAUTION"
                        :                  "FLAT";
             return (finalPct, reason, tag);
         }
@@ -793,7 +793,7 @@ namespace OFK_GEX
             return new string('●', filled) + new string('○', 5 - filled);
         }
 
-        // ── Stats alertes (compteurs jour + 7j) ──────────────────────────────
+        // ── Alert stats (day + 7-day counters) ───────────────────────────────
         private void LoadAlertStats()
         {
             try
@@ -841,7 +841,7 @@ namespace OFK_GEX
             int totalToday = 0, totalWeek = 0;
             lock (_alertStatsSync)
             {
-                if (_alertStats.Count == 0) return "  Aucune alerte enregistrée\n";
+                if (_alertStats.Count == 0) return "  No alerts recorded\n";
                 foreach (var kv in _alertStats) { totalToday += kv.Value.today; totalWeek += kv.Value.week; }
                 ordered = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string, (int, int)>>();
                 foreach (var kv in _alertStats) ordered.Add(kv);
@@ -901,12 +901,12 @@ namespace OFK_GEX
             DockPanel.SetDock(hdr, Dock.Top);
             dock.Children.Add(hdr);
 
-            // Info text (scrollable, ajouté en LAST pour LastChildFill)
+            // Info text (scrollable, added LAST for LastChildFill)
             var infoSec = new Border { Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(18,22,30)), Padding = new Thickness(12,10,12,10), BorderBrush = new SolidColorBrush(borderColor), BorderThickness = new Thickness(0,0,0,1) };
             _infoText = new TextBlock { FontFamily = new System.Windows.Media.FontFamily("Consolas"), FontSize = 11, Foreground = new SolidColorBrush(textColor), TextWrapping = TextWrapping.NoWrap, LineHeight = 18 };
             infoSec.Child = _infoText;
 
-            // Boutons (sticky bottom)
+            // Buttons (sticky bottom)
             var btnSec = new Border { Padding = new Thickness(12,8,12,8), BorderBrush = new SolidColorBrush(borderColor), BorderThickness = new Thickness(0,1,0,0) };
             var grid = new Grid();
             grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
@@ -945,11 +945,11 @@ namespace OFK_GEX
 
             btnSec.Child = grid;
 
-            // Bouton Replay intraday (2e ligne, pleine largeur)
+            // Intraday Replay button (2nd row, full width)
             var replaySec = new Border { Padding = new Thickness(12,0,12,8), BorderBrush = new SolidColorBrush(borderColor), BorderThickness = new Thickness(0,0,0,1) };
             _btnReplay = new Button
             {
-                Content = "🎬  Replay intraday", Height = 32,
+                Content = "🎬  Intraday replay", Height = 32,
                 Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(60,40,90)),
                 Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(189,147,249)),
                 FontSize = 11, FontFamily = new System.Windows.Media.FontFamily("Segoe UI"),
@@ -961,7 +961,7 @@ namespace OFK_GEX
             _btnReplay.Click += (s, e) => OpenReplayWindow();
             replaySec.Child = _btnReplay;
 
-            // Bouton Loop intraday (3e ligne, pleine largeur, toggle ON/OFF)
+            // Intraday Loop button (3rd row, full width, ON/OFF toggle)
             var loopSec = new Border { Padding = new Thickness(12,0,12,8), BorderBrush = new SolidColorBrush(borderColor), BorderThickness = new Thickness(0,0,0,1) };
             _btnLoop = new Button
             {
@@ -979,16 +979,16 @@ namespace OFK_GEX
 
             // Status
             var statusSec = new Border { Background = new SolidColorBrush(bgDark), Padding = new Thickness(12,5,12,5) };
-            _statusText = new TextBlock { FontFamily = new System.Windows.Media.FontFamily("Segoe UI"), FontSize = 10, Foreground = new SolidColorBrush(textDimColor), Text = lv.Loaded ? $"✅ JSON chargé — {lv.TradeDate}  (spot {lv.SpotLoaded:F0})" : "⚠ JSON non chargé — vérifier JSON Path" };
+            _statusText = new TextBlock { FontFamily = new System.Windows.Media.FontFamily("Segoe UI"), FontSize = 10, Foreground = new SolidColorBrush(textDimColor), Text = lv.Loaded ? $"✅ JSON loaded — {lv.TradeDate}  (spot {lv.SpotLoaded:F0})" : "⚠ JSON not loaded — check JSON Path" };
             statusSec.Child = _statusText;
 
-            // Empiler en bas du DockPanel : ordre d'ajout = du bas vers le haut
+            // Stack at the bottom of DockPanel: add order = bottom to top
             DockPanel.SetDock(statusSec, Dock.Bottom);  dock.Children.Add(statusSec);
             DockPanel.SetDock(loopSec,   Dock.Bottom);  dock.Children.Add(loopSec);
             DockPanel.SetDock(replaySec, Dock.Bottom);  dock.Children.Add(replaySec);
             DockPanel.SetDock(btnSec,    Dock.Bottom);  dock.Children.Add(btnSec);
 
-            // ScrollViewer au milieu (LastChildFill = true → prend tout l'espace restant)
+            // ScrollViewer in the middle (LastChildFill = true → takes all remaining space)
             var scroll = new ScrollViewer
             {
                 Content = infoSec,
@@ -1037,11 +1037,11 @@ namespace OFK_GEX
                 if (_infoText == null) return;
                 var lv = _levels;
 
-                string gReg  = lv.GexRegime > 0 ? "POSITIF ● pinning" : lv.GexRegime < 0 ? "NEGATIF ● explosif" : "NEUTRE";
-                string vReg  = lv.VexRegime > 0 ? "IV↓ = RALLY ▲"     : lv.VexRegime < 0 ? "IV↑ = SELLOFF ▼"   : "neutre";
+                string gReg  = lv.GexRegime > 0 ? "POSITIVE ● pinning" : lv.GexRegime < 0 ? "NEGATIVE ● explosive" : "NEUTRAL";
+                string vReg  = lv.VexRegime > 0 ? "IV↓ = RALLY ▲"     : lv.VexRegime < 0 ? "IV↑ = SELLOFF ▼"   : "neutral";
                 string dSide = lv.DexTotal  > 0 ? "longs" : "shorts";
                 string pcrStr= lv.Pcr > 0 ? $"{lv.Pcr:F3}  ({(lv.Pcr > 1 ? "put-heavy" : "call-heavy")})" : "—";
-                // Intraday (primaire scalping)
+                // Intraday (scalping primary)
                 string ivxIdStr  = lv.AtmIvIntraday > 0
                     ? $"{lv.AtmIvIntraday*100:F1}%  ({lv.AtmIvIntradayDte}d)"
                     : "—";
@@ -1051,7 +1051,7 @@ namespace OFK_GEX
                 string termIdStr = (!string.IsNullOrEmpty(lv.TermIntradayRegime) && lv.TermIntradayRegime != "unknown")
                     ? $"{lv.TermIntradayIvFront*100:F1}% ({lv.TermIntradayFrontDte}d) → {lv.TermIntradayIvBack*100:F1}% ({lv.TermIntradayBackDte}d) [{lv.TermIntradayRegime}, {lv.TermIntradaySlope*100:+0.00;-0.00} vp]"
                     : "—";
-                // Structural (secondaire CME 49d)
+                // Structural (CME 49d secondary)
                 string ivxStrStr  = lv.AtmIvStructural > 0 ? $"{lv.AtmIvStructural*100:F1}%" : "—";
                 string skewStrStr = lv.Skew25dStructural != 0
                     ? $"{lv.Skew25dStructural*100:+0.00;-0.00} vp"
@@ -1083,21 +1083,21 @@ namespace OFK_GEX
                 if (lv.IvRankIntraday > 0 && (lv.IvRankIntradayStatus == "ok" || lv.IvRankIntradayStatus == "partial"))
                     ivrStr = $"  IVR         {lv.IvRankIntraday:F0}%  ({lv.IvRankIntradayStatus})\n";
                 else if (!string.IsNullOrEmpty(lv.IvRankIntradayStatus))
-                    ivrStr = $"  IVR         {lv.IvRankIntradayStatus} (hist insuffisant)\n";
+                    ivrStr = $"  IVR         {lv.IvRankIntradayStatus} (insufficient history)\n";
                 // 0DTE
                 string zdLabel = lv.ZeroDTEDte == 0 ? "0DTE" : $"{lv.ZeroDTEDte}DTE";
                 string mp0   = lv.MaxPain0DTE     > 0 ? $"  Max Pain    {lv.MaxPain0DTE:F0}  ({zdLabel})\n" : "";
                 string pin0  = lv.PinStrike0DTE   > 0 ? $"  Pin Strike  {lv.PinStrike0DTE:F0}  ({zdLabel})\n" : "";
                 string ch0   = lv.CharmMagnet0DTE > 0 ? $"  Charm Mag.  {lv.CharmMagnet0DTE:F0}  ({zdLabel})\n" : "";
                 string zdSection = (mp0 + pin0 + ch0).Length > 0
-                    ? $"━━ 0DTE (fin de session) ━━\n{mp0}{pin0}{ch0}  OI total {zdLabel}: {lv.ZeroDTEOITotal:N0}\n\n"
+                    ? $"━━ 0DTE (session end) ━━\n{mp0}{pin0}{ch0}  Total OI {zdLabel}: {lv.ZeroDTEOITotal:N0}\n\n"
                     : "";
 
                 var (sizingPct, sizingReason, sizingTag) = ComputePositionSizing(_meta);
                 string sizingBar = SizingBar(sizingPct);
                 string sizingLine = $"━━ POSITION SIZING [{sizingTag}] ━━\n  {sizingPct,3}%   {sizingBar}   {sizingReason}\n\n";
 
-                string alertStatsLine = $"━━ STATS ALERTES (jour / 7j) ━━\n{FormatAlertStats()}\n";
+                string alertStatsLine = $"━━ ALERT STATS (day / 7d) ━━\n{FormatAlertStats()}\n";
 
                 _infoText.Text =
                     $"═══ OPTIONS GREEKS ES  ({lv.TradeDate}) ═══\n\n" +
@@ -1109,7 +1109,7 @@ namespace OFK_GEX
                     $"  DEX  {lv.DexTotal / 1e10:+0.000;-0.000}   dealers {dSide}\n\n" +
                     $"  Gamma Flip  {lv.GammaFlip:F0}     Trigger  {lv.VolTrigger:F0}\n" +
                     $"  Risk Pivot  {lv.RiskPivot:F0}    V-Flip   {lv.VannaFlip:F0}\n" +
-                    $"  Charm       {lv.CharmMagnet:F0}     Spot réf. {lv.SpotLoaded:F0}\n\n" +
+                    $"  Charm       {lv.CharmMagnet:F0}     Spot ref. {lv.SpotLoaded:F0}\n\n" +
                     $"  Max Pain    {lv.MaxPain:F0}\n" +
                     $"  Exp. Move   {emStr}\n" +
                     $"  PCR         {pcrStr}\n\n" +
@@ -1132,8 +1132,8 @@ namespace OFK_GEX
 
                 if (_statusText != null)
                     _statusText.Text = lv.Loaded
-                        ? $"✅ JSON chargé — {lv.TradeDate}  (spot {lv.SpotLoaded:F0})"
-                        : "⚠ JSON non chargé — vérifier JSON Path";
+                        ? $"✅ JSON loaded — {lv.TradeDate}  (spot {lv.SpotLoaded:F0})"
+                        : "⚠ JSON not loaded — check JSON Path";
             }));
         }
 
@@ -1144,29 +1144,29 @@ namespace OFK_GEX
             if (_isRunning) return;
             if (!File.Exists(ScriptPath))
             {
-                Application.Current?.Dispatcher?.Invoke(() => { if (_statusText != null) _statusText.Text = "❌ Script introuvable : " + ScriptPath; });
+                Application.Current?.Dispatcher?.Invoke(() => { if (_statusText != null) _statusText.Text = "❌ Script not found: " + ScriptPath; });
                 return;
             }
 
-            // Reload immédiat du JSON courant (au cas où il aurait été
-            // mis à jour par un run externe — manuel ou via run_intraday_refresh).
-            // Comme ça l'utilisateur voit les données fraîches dès le clic,
-            // sans attendre la fin du nouveau run.
+            // Immediate reload of current JSON (in case it was
+            // updated by an external run — manual or via run_intraday_refresh).
+            // This way the user sees fresh data on click,
+            // without waiting for the new run to complete.
             LoadLevels();
             Application.Current?.Dispatcher?.Invoke(() => {
                 UpdatePanelText();
                 var lv = _levels;
                 if (_statusText != null && lv.Loaded)
-                    _statusText.Text = $"✅ JSON rechargé — {lv.TradeDate}";
+                    _statusText.Text = $"✅ JSON reloaded — {lv.TradeDate}";
             });
             try { RedrawChart(); } catch { }
 
             _isRunning = true;
             Application.Current?.Dispatcher?.Invoke(() =>
             {
-                if (_btnRefresh  != null) { _btnRefresh.Content = "⏳ En cours…"; _btnRefresh.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(220,80,60,0)); _btnRefresh.Foreground = System.Windows.Media.Brushes.Orange; _btnRefresh.IsEnabled = false; }
+                if (_btnRefresh  != null) { _btnRefresh.Content = "⏳ In progress…"; _btnRefresh.Background = new SolidColorBrush(System.Windows.Media.Color.FromArgb(220,80,60,0)); _btnRefresh.Foreground = System.Windows.Media.Brushes.Orange; _btnRefresh.IsEnabled = false; }
                 if (_btnBriefing != null) _btnBriefing.IsEnabled = false;
-                if (_statusText  != null) _statusText.Text = "⏳ run_morning_ES.py en cours (CME ES + CBOE SPY + Claude + PDF)…";
+                if (_statusText  != null) _statusText.Text = "⏳ run_morning_ES.py in progress (CME ES + CBOE SPY + Claude + PDF)…";
             });
             Task.Run(() =>
             {
@@ -1179,7 +1179,7 @@ namespace OFK_GEX
                         UseShellExecute  = false,
                         CreateNoWindow   = false,
                         WindowStyle      = ProcessWindowStyle.Normal,
-                        WorkingDirectory = System.IO.Path.GetDirectoryName(ScriptPath) ?? @"C:\Users\steph\Documents\GitHub\OFK_Atas_GEX\OFK_GEX_Pipeline",
+                        WorkingDirectory = System.IO.Path.GetDirectoryName(ScriptPath) ?? @"C:\OFK_Atas_GEX\OFK_GEX_Pipeline",
                     };
                     using var proc = Process.Start(psi);
                     bool exited = proc?.WaitForExit(300_000) ?? false;
@@ -1187,7 +1187,7 @@ namespace OFK_GEX
                     if (exitCode == 0) LoadLevels();
                     Application.Current?.Dispatcher?.Invoke(() =>
                     {
-                        string msg = exitCode == 0 ? "✅ Données mises à jour" : $"⚠ Exit {exitCode}";
+                        string msg = exitCode == 0 ? "✅ Data updated" : $"⚠ Exit {exitCode}";
                         if (_btnRefresh  != null) { _btnRefresh.Content = "▶  GEX LEVELS"; _btnRefresh.Background = new SolidColorBrush(System.Windows.Media.Color.FromRgb(20,40,90)); _btnRefresh.Foreground = new SolidColorBrush(System.Windows.Media.Color.FromRgb(79,139,209)); _btnRefresh.IsEnabled = true; }
                         if (_btnBriefing != null) _btnBriefing.IsEnabled = true;
                         var lv = _levels;
@@ -1215,16 +1215,16 @@ namespace OFK_GEX
         {
             try
             {
-                if (!Directory.Exists(BriefingDir)) { if (_statusText != null) Application.Current?.Dispatcher?.Invoke(() => _statusText.Text = "❌ Dossier PDF introuvable : " + BriefingDir); return; }
+                if (!Directory.Exists(BriefingDir)) { if (_statusText != null) Application.Current?.Dispatcher?.Invoke(() => _statusText.Text = "❌ PDF folder not found: " + BriefingDir); return; }
                 var pdfs = Directory.GetFiles(BriefingDir, "briefing_ES_*.pdf").OrderByDescending(f => f).ToArray();
-                if (pdfs.Length == 0) { if (_statusText != null) Application.Current?.Dispatcher?.Invoke(() => _statusText.Text = "⚠ Aucun PDF trouvé"); return; }
+                if (pdfs.Length == 0) { if (_statusText != null) Application.Current?.Dispatcher?.Invoke(() => _statusText.Text = "⚠ No PDF found"); return; }
                 Process.Start(new ProcessStartInfo(pdfs[0]) { UseShellExecute = true });
                 if (_statusText != null) Application.Current?.Dispatcher?.Invoke(() => _statusText.Text = "📄 " + Path.GetFileName(pdfs[0]));
             }
             catch (Exception ex) { if (_statusText != null) Application.Current?.Dispatcher?.Invoke(() => _statusText.Text = "❌ " + ex.Message.Substring(0, Math.Min(60, ex.Message.Length))); }
         }
 
-        // ── Rendu chart ───────────────────────────────────────────────────────
+        // ── Chart rendering ──────────────────────────────────────────────────
 
         protected override void OnRender(RenderContext context, DrawingLayouts layout)
         {
@@ -1240,7 +1240,7 @@ namespace OFK_GEX
                 if (yCw < yPw) context.FillRectangle(DrawingColor.FromArgb(PinZoneOpacity * 255 / 100, 0, 200, 0), new Rectangle(0, yCw, chartW, yPw - yCw));
             }
 
-            // Bande Expected Move (TastyTrade-style si EM TT dispo dans le pipeline)
+            // Expected Move band (TastyTrade-style if EM TT available in pipeline)
             if (ShowEMZone && lv.ExpectedMoveHigh > 0 && lv.ExpectedMoveLow > 0)
             {
                 int yH = (int)ChartInfo.GetYByPrice((decimal)lv.ExpectedMoveHigh, false);
@@ -1252,8 +1252,8 @@ namespace OFK_GEX
                         new Rectangle(0, yH, chartW, yL - yH));
             }
 
-            // ─── Zones Gamma (Phase 1, TanukiTrade-style) ──────────────────────
-            // Bornes : Put Wall ID < pTrans < cTrans < Call Wall ID
+            // ─── Gamma Zones (Phase 1, TanukiTrade-style) ──────────────────────
+            // Bounds: Put Wall ID < pTrans < cTrans < Call Wall ID
             if (ShowGammaZones)
             {
                 int alpha = Math.Max(2, Math.Min(40, GammaZoneOpacity)) * 255 / 100;
@@ -1352,7 +1352,7 @@ namespace OFK_GEX
             DrawLevel(context, chartW, lv.TopOI1,           ShowTopOI1,           TopOI1Color,           penOI1, 3,  6, $"OI #1  {lv.TopOI1:F0}  ({lv.TopOI1Vol:N0})");
             DrawLevel(context, chartW, lv.TopOI2,           ShowTopOI2,           TopOI2Color,           penOI2, 3,  6, $"OI #2  {lv.TopOI2:F0}  ({lv.TopOI2Vol:N0})");
             DrawLevel(context, chartW, lv.TopOI3,           ShowTopOI3,           TopOI3Color,           penOI3, 3,  6, $"OI #3  {lv.TopOI3:F0}  ({lv.TopOI3Vol:N0})");
-            // Niveaux INTRADAY (CBOE 0-7 DTE — primaires scalping)
+            // INTRADAY levels (CBOE 0-7 DTE — scalping primary)
             string idTag = $" [0-{(lv.WallsIntradayMaxDte > 0 ? lv.WallsIntradayMaxDte : 7)}d]";
             DrawLevel(context, chartW, lv.CallWallIntraday, ShowCallWallIntraday, CallWallIntradayColor, penCWid, 9, 4, $"CW ID  {lv.CallWallIntraday:F0}  [GEX {lv.CallWallIntradayGex/1e9:+0.000;-0.000}B]" + idTag);
             DrawLevel(context, chartW, lv.PutWallIntraday,  ShowPutWallIntraday,  PutWallIntradayColor,  penPWid, 9, 4, $"PW ID  {lv.PutWallIntraday:F0}  [GEX {lv.PutWallIntradayGex/1e9:+0.000;-0.000}B]" + idTag);
@@ -1364,19 +1364,19 @@ namespace OFK_GEX
             var penPT = new RenderPen(PTransIntradayColor, LineWidth);
             DrawLevel(context, chartW, lv.CTransIntraday,   ShowCTransIntraday,   CTransIntradayColor,   penCT, 3, 8, $"cTrans  {lv.CTransIntraday:F0}  [call dom.]" + idTag);
             DrawLevel(context, chartW, lv.PTransIntraday,   ShowPTransIntraday,   PTransIntradayColor,   penPT, 3, 8, $"pTrans  {lv.PTransIntraday:F0}  [put dom.]" + idTag);
-            // DEX D+ / D- (Phase 4 — TanukiTrade-style, pression de hedging directionnelle)
+            // DEX D+ / D- (Phase 4 — TanukiTrade-style, directional hedging pressure)
             var penDp = new RenderPen(DexPlusIntradayColor,  LineWidth);
             var penDm = new RenderPen(DexMinusIntradayColor, LineWidth);
             DrawLevel(context, chartW, lv.DexPlusIntraday,  ShowDexPlusIntraday,  DexPlusIntradayColor,  penDp, 2, 5, $"D+  {lv.DexPlusIntraday:F0}  [DEX {lv.DexPlusIntradayDex/1e6:+0.00;-0.00}M]" + idTag);
             DrawLevel(context, chartW, lv.DexMinusIntraday, ShowDexMinusIntraday, DexMinusIntradayColor, penDm, 2, 5, $"D-  {lv.DexMinusIntraday:F0}  [DEX {lv.DexMinusIntradayDex/1e6:+0.00;-0.00}M]" + idTag);
-            // Abs GEX Ab1/Ab2/Ab3 (Phase 5 — pin risk, gamma absolue concentrée)
+            // Abs GEX Ab1/Ab2/Ab3 (Phase 5 — pin risk, concentrated absolute gamma)
             var penAb1 = new RenderPen(AbsGex1Color, 1);
             var penAb2 = new RenderPen(AbsGex2Color, 1);
             var penAb3 = new RenderPen(AbsGex3Color, 1);
             DrawLevel(context, chartW, lv.AbsGex1, ShowAbsGex1, AbsGex1Color, penAb1, 2, 8, $"Ab1  {lv.AbsGex1:F0}  [|GEX| {lv.AbsGex1Gex/1e9:+0.000;-0.000}B]" + idTag);
             DrawLevel(context, chartW, lv.AbsGex2, ShowAbsGex2, AbsGex2Color, penAb2, 2, 8, $"Ab2  {lv.AbsGex2:F0}  [|GEX| {lv.AbsGex2Gex/1e9:+0.000;-0.000}B]" + idTag);
             DrawLevel(context, chartW, lv.AbsGex3, ShowAbsGex3, AbsGex3Color, penAb3, 2, 8, $"Ab3  {lv.AbsGex3:F0}  [|GEX| {lv.AbsGex3Gex/1e9:+0.000;-0.000}B]" + idTag);
-            // Extended walls (Phase 6 — TanukiTrade GEX7-10), couleur selon côté call/put
+            // Extended walls (Phase 6 — TanukiTrade GEX7-10), color depends on call/put side
             DrawingColor extColor(string side) => side == "put" ? GexExtPutColor : GexExtCallColor;
             void DrawExt(int n, double price, bool show, double gex, string side)
             {
@@ -1390,7 +1390,7 @@ namespace OFK_GEX
             DrawExt(2, lv.GexExt2, ShowGexExt2, lv.GexExt2Gex, lv.GexExt2Side);
             DrawExt(3, lv.GexExt3, ShowGexExt3, lv.GexExt3Gex, lv.GexExt3Side);
             DrawExt(4, lv.GexExt4, ShowGexExt4, lv.GexExt4Gex, lv.GexExt4Side);
-            // Niveaux 0DTE (Phase C)
+            // 0DTE levels (Phase C)
             var penMP0  = new RenderPen(MaxPain0DTEColor,     1);
             var penPin0 = new RenderPen(PinStrike0DTEColor,   LineWidth + 1);
             var penChM0 = new RenderPen(CharmMagnet0DTEColor, LineWidth);
@@ -1399,7 +1399,7 @@ namespace OFK_GEX
             DrawLevel(context, chartW, lv.PinStrike0DTE,   ShowPinStrike0DTE,   PinStrike0DTEColor,   penPin0, 5, 3, $"Pin {zd}  {lv.PinStrike0DTE:F0}");
             DrawLevel(context, chartW, lv.CharmMagnet0DTE, ShowCharmMagnet0DTE, CharmMagnet0DTEColor, penChM0, 4, 3, $"Charm {zd}  {lv.CharmMagnet0DTE:F0}");
 
-            // ─── Bannières alertes on-chart ────────────────────────────────
+            // ─── On-chart alert banners ───────────────────────────────────
             if (EnableVisualBanners)
             {
                 BannerEntry[] active;
@@ -1414,11 +1414,11 @@ namespace OFK_GEX
                     int count = Math.Min(active.Length, MaxVisibleBanners);
                     int bH = 22, bGap = 3, bTop = 8, bRight = 10;
 
-                    // Détection dynamique du bord droit utile :
-                    // si le DOM trader est ouvert, ChartArea.Width inclut sa
-                    // largeur. On utilise la position X de la dernière barre
-                    // dessinée + une petite marge comme bord droit effectif —
-                    // le DOM trader vit toujours après cette zone.
+                    // Dynamic detection of useful right edge:
+                    // if the DOM trader is open, ChartArea.Width includes its
+                    // width. We use the X position of the last drawn bar
+                    // + a small margin as the effective right edge —
+                    // the DOM trader always lives after this area.
                     int rightEdge = chartW;
                     try
                     {
@@ -1451,7 +1451,7 @@ namespace OFK_GEX
                 }
             }
 
-            // ─── Overlay REPLAY (centré en haut du chart) ───────────────────
+            // ─── REPLAY overlay (centered at top of chart) ─────────────────
             if (_replayMode)
             {
                 var rFont = new RenderFont("Arial Bold", 13);
@@ -1467,7 +1467,7 @@ namespace OFK_GEX
             }
         }
 
-        // Font dynamique (LabelFontSize était hard-codé à 9 — bug fix)
+        // Dynamic font (LabelFontSize was hard-coded to 9 — bug fix)
         private RenderFont GetLabelFont() => new RenderFont("Arial", Math.Max(7, Math.Min(14, LabelFontSize)));
 
         private void DrawLevel(RenderContext ctx, int chartW, double price, bool show,
@@ -1477,7 +1477,7 @@ namespace OFK_GEX
             int y = (int)ChartInfo.GetYByPrice((decimal)price, false);
             if (y < 0 || y > ChartArea.Height + 200) return;
 
-            // Ligne (option : extension droite seulement, depuis la dernière barre)
+            // Line (option: right-side extension only, from last bar)
             int xStart = 0;
             if (LineExtensionRightOnly && CurrentBar > 0)
             {
@@ -1500,7 +1500,7 @@ namespace OFK_GEX
                 }
             }
 
-            // Label (option : on/off + position gauche/droite + opacité fond)
+            // Label (option: on/off + left/right position + background opacity)
             if (!ShowLineLabels) return;
             var font = GetLabelFont();
             var ts = ctx.MeasureString(label, font);
@@ -1529,7 +1529,7 @@ namespace OFK_GEX
 
         public override void Dispose()
         {
-            // Tuer le process loop intraday s'il tourne encore
+            // Kill the intraday loop process if still running
             try
             {
                 if (_loopProcess != null && !_loopProcess.HasExited)
@@ -1546,7 +1546,7 @@ namespace OFK_GEX
             base.Dispose();
         }
 
-        // ── Loop intraday refresh : background process toggle ─────────────────
+        // ── Intraday loop refresh: background process toggle ─────────────────
         private void ToggleLoop()
         {
             if (_loopRunning) StopLoop();
@@ -1559,7 +1559,7 @@ namespace OFK_GEX
             if (!File.Exists(IntradayRefreshScriptPath))
             {
                 if (_statusText != null)
-                    _statusText.Text = "❌ Script intraday introuvable : " + IntradayRefreshScriptPath;
+                    _statusText.Text = "❌ Intraday script not found: " + IntradayRefreshScriptPath;
                 return;
             }
             try
@@ -1572,24 +1572,24 @@ namespace OFK_GEX
                     CreateNoWindow         = true,
                     WindowStyle            = ProcessWindowStyle.Hidden,
                     WorkingDirectory       = System.IO.Path.GetDirectoryName(IntradayRefreshScriptPath)
-                                             ?? @"C:\Users\steph\Documents\GitHub\OFK_Atas_GEX\OFK_GEX_Pipeline",
+                                             ?? @"C:\OFK_Atas_GEX\OFK_GEX_Pipeline",
                     RedirectStandardOutput = true,
                     RedirectStandardError  = true,
                 };
-                // Force UTF-8 sur stdout/stderr de Python : sinon les caractères
-                // box-drawing (─, ═, →) lèvent UnicodeEncodeError sur cp1252
-                // (encoding par défaut quand stdout est piped sur Windows).
+                // Force UTF-8 on Python stdout/stderr: otherwise box-drawing
+                // chars (─, ═, →) raise UnicodeEncodeError on cp1252
+                // (default encoding when stdout is piped on Windows).
                 psi.Environment["PYTHONIOENCODING"] = "utf-8";
                 psi.Environment["PYTHONUTF8"]       = "1";
                 _loopProcess = Process.Start(psi);
                 if (_loopProcess == null)
                 {
-                    if (_statusText != null) _statusText.Text = "❌ Échec démarrage loop";
+                    if (_statusText != null) _statusText.Text = "❌ Loop startup failed";
                     return;
                 }
-                // CRITICAL : consommer les streams en async pour ne pas bloquer
-                // le process Python quand il print (buffer pipe ~4KB se remplit
-                // sinon, le process se fige sur le 2-3e cycle).
+                // CRITICAL: consume streams async to avoid blocking
+                // the Python process when it prints (pipe buffer ~4KB fills
+                // otherwise, the process freezes on cycle 2-3).
                 _loopProcess.OutputDataReceived += (s, e) => { /* discard */ };
                 _loopProcess.ErrorDataReceived  += (s, e) => { /* discard */ };
                 try { _loopProcess.BeginOutputReadLine(); } catch { }
@@ -1603,12 +1603,12 @@ namespace OFK_GEX
                     Application.Current?.Dispatcher?.BeginInvoke(new Action(() =>
                     {
                         UpdateLoopButton();
-                        if (_statusText != null) _statusText.Text = "⏹ Loop intraday s'est arrêté";
+                        if (_statusText != null) _statusText.Text = "⏹ Intraday loop has stopped";
                     }));
                 };
                 UpdateLoopButton();
                 if (_statusText != null)
-                    _statusText.Text = $"🔄 Loop intraday ON  (PID {_loopProcess.Id})";
+                    _statusText.Text = $"🔄 Intraday loop ON  (PID {_loopProcess.Id})";
             }
             catch (Exception ex)
             {
@@ -1631,7 +1631,7 @@ namespace OFK_GEX
             _loopProcess = null;
             _loopRunning = false;
             UpdateLoopButton();
-            if (_statusText != null) _statusText.Text = "⏹ Loop intraday OFF";
+            if (_statusText != null) _statusText.Text = "⏹ Intraday loop OFF";
         }
 
         private void UpdateLoopButton()
@@ -1642,14 +1642,14 @@ namespace OFK_GEX
                 if (_btnLoop == null) return;
                 if (_loopRunning)
                 {
-                    _btnLoop.Content     = "⏹  Loop intraday : ON";
+                    _btnLoop.Content     = "⏹  Intraday loop: ON";
                     _btnLoop.Background  = new SolidColorBrush(System.Windows.Media.Color.FromRgb(20, 70, 35));
                     _btnLoop.Foreground  = new SolidColorBrush(System.Windows.Media.Color.FromRgb(63, 185, 80));
                     _btnLoop.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(63, 185, 80));
                 }
                 else
                 {
-                    _btnLoop.Content     = "▶  Loop intraday : OFF";
+                    _btnLoop.Content     = "▶  Intraday loop: OFF";
                     _btnLoop.Background  = new SolidColorBrush(System.Windows.Media.Color.FromRgb(35, 35, 45));
                     _btnLoop.Foreground  = new SolidColorBrush(System.Windows.Media.Color.FromRgb(150, 150, 160));
                     _btnLoop.BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(80, 80, 90));
@@ -1657,7 +1657,7 @@ namespace OFK_GEX
             }));
         }
 
-        // ── Replay : ouverture de la fenêtre WPF ──────────────────────────────
+        // ── Replay: opening the WPF window ───────────────────────────────────
         private void OpenReplayWindow()
         {
             if (_replayWindow != null) { try { _replayWindow.Activate(); } catch { } return; }
@@ -1666,10 +1666,10 @@ namespace OFK_GEX
             {
                 try {
                     MessageBox.Show(
-                        "Aucun snapshot intraday trouvé pour aujourd'hui.\n\n" +
-                        "Vérifie que run_intraday_refresh.py tourne et que le dossier est correct :\n" +
+                        "No intraday snapshots found for today.\n\n" +
+                        "Check that run_intraday_refresh.py is running and the folder is correct:\n" +
                         IntradayHistoryDir,
-                        "Replay intraday", MessageBoxButton.OK, MessageBoxImage.Information);
+                        "Intraday replay", MessageBoxButton.OK, MessageBoxImage.Information);
                 } catch { }
                 return;
             }
@@ -1683,10 +1683,10 @@ namespace OFK_GEX
             _replayWindow.Show();
         }
 
-        // ── LoadLevels (délègue au shared loader) ─────────────────────────────
+        // ── LoadLevels (delegates to shared loader) ──────────────────────────
         private void LoadLevels()
         {
-            if (_replayMode) return; // freeze pendant le replay
+            if (_replayMode) return; // freeze during replay
             var (gex, meta, ok) = GexLoader.Load(JsonPath, "es");
             if (!ok) { _levelsLoaded = false; return; }
             _levels       = gex;
@@ -1697,7 +1697,7 @@ namespace OFK_GEX
             LoadAlertStats();
         }
 
-        // ── Replay intraday : chargement d'un snapshot historique ─────────────
+        // ── Intraday replay: loading a historical snapshot ───────────────────
         public void LoadReplaySnapshot(string snapshotPath, DateTime timestamp)
         {
             var (gex, meta, ok) = GexLoader.LoadSnapshotPath(snapshotPath, "es");

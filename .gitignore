@@ -1,0 +1,22 @@
+# .NET build artifacts
+OFK_ATAS/bin/
+OFK_ATAS/obj/
+
+# Python bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Pipeline runtime data (large, machine-specific)
+OFK_GEX_Pipeline/data/history/
+OFK_GEX_Pipeline/data/backups/
+OFK_GEX_Pipeline/logs/
+
+# IDE / OS
+.vs/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

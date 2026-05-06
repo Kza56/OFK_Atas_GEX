@@ -94,7 +94,7 @@ def merge_levels() -> dict:
         "gex_regime"         : cme.get("gex_regime"),
         "vex_regime"         : cme.get("vex_regime"),
 
-        # ─── PRIMAIRE SCALPING (CBOE intraday 0-7 DTE) ───────────────────
+        # ─── PRIMARY SCALPING (CBOE intraday 0-7 DTE) ─────────────────────
         "atm_iv_intraday"        : cboe.get("atm_iv_intraday"),
         "atm_iv_intraday_dte"    : cboe.get("atm_iv_intraday_dte"),
         "atm_iv_intraday_by_dte" : cboe.get("atm_iv_intraday_by_dte"),
@@ -119,7 +119,7 @@ def merge_levels() -> dict:
         "term_intraday_iv_front" : cboe.get("term_intraday_iv_front"),
         "term_intraday_iv_back"  : cboe.get("term_intraday_iv_back"),
 
-        # ─── STRUCTUREL (CME 49d+, contexte secondaire) ──────────────────
+        # ─── STRUCTURAL (CME 49d+, secondary context) ────────────────────
         "atm_iv_structural"      : cme.get("atm_iv_front"),
         "iv_structural_by_dte"   : cme.get("iv_by_dte"),
         "skew_25d_structural"    : cme.get("skew_25d_front"),
@@ -129,11 +129,11 @@ def merge_levels() -> dict:
         "iv_structural_back_dte" : cme.get("iv_back_dte"),
         "iv_structural_back"     : cme.get("iv_back"),
 
-        # Call/Put Wall GEX values (CBOE SPY — structurel)
+        # Call/Put Wall GEX values (CBOE SPY — structural)
         "call_wall_gex"      : cboe.get("call_wall_gex"),
         "put_wall_gex"       : cboe.get("put_wall_gex"),
 
-        # ─── Niveaux INTRADAY (CBOE 0-7 DTE, primaires scalping) ─────────
+        # ─── INTRADAY levels (CBOE 0-7 DTE, primary for scalping) ────────
         "call_wall_intraday_spy" : cboe.get("call_wall_intraday"),
         "call_wall_intraday_es"  : spy_to_es(cboe.get("call_wall_intraday")),
         "call_wall_intraday_gex" : cboe.get("call_wall_intraday_gex"),
@@ -195,7 +195,7 @@ def merge_levels() -> dict:
         **{f"vol_flow_{i}_total": cboe.get(f"vol_flow_{i}_total") for i in range(1, 4)},
         "vol_flow_intraday_max_dte": cboe.get("vol_flow_intraday_max_dte"),
 
-        # Mode intraday (cumulative ∑ vs selected ⊙)
+        # Intraday mode (cumulative ∑ vs selected ⊙)
         "intraday_mode"          : cboe.get("intraday_mode"),
         "intraday_max_dte_param" : cboe.get("intraday_max_dte_param"),
 
@@ -210,7 +210,7 @@ def merge_levels() -> dict:
             for s in cboe.get("top_oi_intraday", [])
         ],
 
-        # ─── Niveaux 0DTE (Phase C — fin de session, pinning aigu) ────────
+        # ─── 0DTE levels (Phase C — end of session, acute pinning) ────────
         "max_pain_0dte_spy"     : cboe.get("max_pain_0dte_spy"),
         "max_pain_0dte_es"      : spy_to_es(cboe.get("max_pain_0dte_spy")),
         "pin_strike_0dte_spy"   : cboe.get("pin_strike_0dte_spy"),
@@ -220,7 +220,7 @@ def merge_levels() -> dict:
         "zero_dte_oi_total"     : cboe.get("zero_dte_oi_total"),
         "zero_dte_dte"          : cboe.get("zero_dte_dte"),
 
-        # CBOE metrics converted to ES — privilégie l'EM TastyTrade si dispo
+        # CBOE metrics converted to ES — prefer TastyTrade EM if available
         "max_pain_spy"       : cboe.get("max_pain"),
         "max_pain_es"        : spy_to_es(cboe.get("max_pain")),
         "expected_move_spy"  : cboe.get("expected_move_tt") or cboe.get("expected_move"),
@@ -244,7 +244,7 @@ def merge_levels() -> dict:
         "vix_term_slope"     : vix.get("vix_term_slope"),
         "vix_dod_change"     : vix.get("vix_dod_change"),
 
-        # Macro blackout (Forex Factory ±30min événements High USD)
+        # Macro blackout (Forex Factory ±30min High-impact USD events)
         "macro_in_blackout"     : blackout.get("in_blackout", False),
         "macro_blackout_until"  : blackout.get("blackout_until_utc"),
         "macro_current_event"   : blackout.get("current_event"),
@@ -277,7 +277,7 @@ def merge_levels() -> dict:
         full["skew_25d_cboe_match"]     = match_skew
         full["skew_25d_cboe_match_dte"] = match_dte
 
-    # IV Rank (Phase 3) — calculé sur l'historique avant save_snapshot.
+    # IV Rank (Phase 3) — computed from history before save_snapshot.
     iv_id = full.get("atm_iv_intraday")
     if iv_id and iv_id > 0:
         full["iv_rank_intraday"] = compute_iv_rank("ES", iv_id,
@@ -287,7 +287,7 @@ def merge_levels() -> dict:
         full["iv_rank_structural"] = compute_iv_rank("ES", iv_str,
                                                      iv_field="atm_iv_structural")
 
-    # Bloc 7 : versioning + health check
+    # Block 7: versioning + health check
     from config import JSON_SCHEMA_VERSION, compute_data_quality
     full["json_schema_version"] = JSON_SCHEMA_VERSION
     full["last_update_utc"]     = datetime.now(timezone.utc).isoformat()
@@ -296,11 +296,11 @@ def merge_levels() -> dict:
     FULL_JSON.parent.mkdir(parents=True, exist_ok=True)
     FULL_JSON.write_text(json.dumps(full, indent=2))
 
-    # Snapshot quotidien (Phase 1.3) — historique pour IVR (Phase 3)
+    # Daily snapshot (Phase 1.3) — history for IVR (Phase 3)
     snap_path = save_snapshot("ES", full)
     print(f"  Snapshot -> {snap_path}")
 
-    # Backup tarball (Bloc 6) — protège les 252 jours d'historique IVR
+    # Backup tarball (Block 6) — protects the 252-day IVR history
     try:
         from backup_snapshots import make_backup, cleanup_old_backups
         bk = make_backup()
@@ -331,7 +331,7 @@ def merge_levels() -> dict:
     print(f"  Risk Pivot ES    : {full['risk_pivot']}")
     print(f"  Vanna Flip ES    : {full['vanna_flip']}")
     print(f"  Charm Magnet ES  : {full['charm_magnet']}")
-    # ─── Métriques intraday (primaires scalping) ─────────────────────────
+    # ─── Intraday metrics (primary for scalping) ─────────────────────────
     iv_id = full.get("atm_iv_intraday")
     if iv_id:
         ivr = full.get("iv_rank_intraday") or {}
@@ -356,12 +356,12 @@ def merge_levels() -> dict:
         print(f"  Term intraday    : {ivf:.1f}% ({fdte}d) → {ivb:.1f}% ({bdte}d)  "
               f"({tr_id}, {sl*100:+.2f} vp)")
 
-    # ─── Structurel (contexte CME 49d+) ──────────────────────────────────
+    # ─── Structural (CME 49d+ context) ───────────────────────────────────
     if full.get("atm_iv_structural"):
         print(f"  IVx structural   : {full['atm_iv_structural']*100:.1f}%  (CME 49d)")
     if full.get("skew_25d_structural") is not None:
         sk = full['skew_25d_structural']
-        print(f"  Skew structural  : {sk*100:+.2f} vol pts  (CME 49d, peut être gonflé par OTM calls illiquides)")
+        print(f"  Skew structural  : {sk*100:+.2f} vol pts  (CME 49d, may be inflated by illiquid OTM calls)")
     if full.get("term_structural_regime") and full.get("term_structural_regime") != "unknown":
         slope = full.get('term_structural_slope', 0) or 0
         print(f"  Term structural  : {full['term_structural_regime']} ({slope*100:+.2f} vp, CME 49d→{full.get('iv_structural_back_dte', 0)}d)")
@@ -377,7 +377,7 @@ def merge_levels() -> dict:
         print(f"  Top OI #2 (str.) : ES {tops[1]['strike_es']}  (OI {tops[1]['total_oi']:,.0f})")
         print(f"  Top OI #3 (str.) : ES {tops[2]['strike_es']}  (OI {tops[2]['total_oi']:,.0f})")
 
-    # Niveaux INTRADAY (0-7 DTE, primaires scalping)
+    # INTRADAY levels (0-7 DTE, primary for scalping)
     cw_id = full.get("call_wall_intraday_es")
     pw_id = full.get("put_wall_intraday_es")
     if cw_id and pw_id:
@@ -389,15 +389,15 @@ def merge_levels() -> dict:
     if ct_es or pt_es:
         ct_str = f"ES {ct_es}" if ct_es else "—"
         pt_str = f"ES {pt_es}" if pt_es else "—"
-        print(f"  cTrans intraday  : {ct_str}  [call gamma dominant au-dessus]")
-        print(f"  pTrans intraday  : {pt_str}  [put gamma dominant en-dessous]")
+        print(f"  cTrans intraday  : {ct_str}  [call gamma dominant above]")
+        print(f"  pTrans intraday  : {pt_str}  [put gamma dominant below]")
     dp_es = full.get("dex_plus_intraday_es")
     dm_es = full.get("dex_minus_intraday_es")
     if dp_es or dm_es:
         dp_str = f"ES {dp_es} (DEX {full.get('dex_plus_intraday_dex',0):,.0f})" if dp_es else "—"
         dm_str = f"ES {dm_es} (DEX {full.get('dex_minus_intraday_dex',0):,.0f})" if dm_es else "—"
-        print(f"  D+ DEX intraday  : {dp_str}  [dealers achètent → bullish]")
-        print(f"  D- DEX intraday  : {dm_str}  [dealers vendent → bearish]")
+        print(f"  D+ DEX intraday  : {dp_str}  [dealers buy → bullish]")
+        print(f"  D- DEX intraday  : {dm_str}  [dealers sell → bearish]")
     for i in range(1, 4):
         ab = full.get(f"abs_gex_intraday_{i}_es")
         if ab:
@@ -412,7 +412,7 @@ def merge_levels() -> dict:
         d = full.get('zero_dte_dte', 0)
         print(f"  Max Pain 0DTE    : ES {full['max_pain_0dte_es']}  ({d}DTE)")
         print(f"  Pin Strike 0DTE  : ES {full['pin_strike_0dte_es']}  (gamma max)")
-        print(f"  Charm Mag. 0DTE  : ES {full['charm_magnet_0dte_es']}  (proche spot)")
+        print(f"  Charm Mag. 0DTE  : ES {full['charm_magnet_0dte_es']}  (near spot)")
     print(f"  -> {FULL_JSON} OK")
     return full
 
@@ -438,29 +438,29 @@ if __name__ == "__main__":
     setup_logging()
 
     def _pause_console():
-        """Empêche la fenêtre cmd de se fermer instantanément (lancée depuis bouton ATAS)."""
+        """Prevents the cmd window from closing instantly (launched from ATAS button)."""
         try:
-            input("\n  Appuyer sur ENTREE pour fermer cette fenetre...")
+            input("\n  Press ENTER to close this window...")
         except (EOFError, KeyboardInterrupt, OSError):
             pass
 
     try:
         import argparse
-        p = argparse.ArgumentParser(description="Pipeline ES matin (CME + CBOE + Claude + PDF)")
+        p = argparse.ArgumentParser(description="ES morning pipeline (CME + CBOE + Claude + PDF)")
         p.add_argument("--fast", action="store_true",
-                       help="Mode fast : skip Claude AI + PDF (juste CME + CBOE → JSON)")
+                       help="Fast mode: skip Claude AI + PDF (CME + CBOE → JSON only)")
         p.add_argument("--skip-cme", action="store_true",
-                       help="Skip le scraping CME (utilise le dernier JSON CME existant)")
+                       help="Skip CME scraping (uses the last existing CME JSON)")
         p.add_argument("--max-dte", type=int, default=7,
-                       help="DTE max intraday CBOE. 7=cumulative ∑ (default), 0=selected ⊙ 0DTE.")
+                       help="Max intraday CBOE DTE. 7=cumulative ∑ (default), 0=selected ⊙ 0DTE.")
         p.add_argument("--ignore-holiday", action="store_true",
-                       help="Continue même si NYSE fermée aujourd'hui (sinon abort propre).")
+                       help="Continue even if NYSE closed today (otherwise clean abort).")
         args = p.parse_args()
 
         from market_calendar import is_market_open_today, is_early_close_today
         if not is_market_open_today() and not args.ignore_holiday:
-            print(f"\n  ABORT — NYSE fermée aujourd'hui (weekend ou jour férié).")
-            print(f"  Override avec --ignore-holiday si tu veux quand même fetch.")
+            print(f"\n  ABORT — NYSE closed today (weekend or holiday).")
+            print(f"  Override with --ignore-holiday to fetch anyway.")
             _pause_console()
             sys.exit(0)
 
@@ -491,13 +491,13 @@ if __name__ == "__main__":
             run_agent()
             run_pdf()
         else:
-            print(f"\n  Mode FAST : skip Claude AI + PDF.")
+            print(f"\n  FAST mode: skip Claude AI + PDF.")
     except SystemExit:
         _pause_console()
         raise
     except Exception as e:
         import traceback
-        print(f"\n  ❌ ERREUR : {type(e).__name__}: {e}")
+        print(f"\n  ❌ ERROR: {type(e).__name__}: {e}")
         traceback.print_exc()
         _pause_console()
         sys.exit(1)

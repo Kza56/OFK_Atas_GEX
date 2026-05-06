@@ -1,4 +1,4 @@
-"""Tests compute_data_quality() — Bloc 7."""
+"""Tests for compute_data_quality() — Block 7."""
 from config import compute_data_quality, JSON_SCHEMA_VERSION
 
 
@@ -40,7 +40,7 @@ def test_quality_ok_when_all_three_sources():
 
 
 def test_quality_ignores_zero_values():
-    # vix=0 → considéré comme absent
+    # vix=0 -> treated as absent
     assert compute_data_quality({
         "total_gex": 1e9,
         "atm_iv_intraday": 0.18,

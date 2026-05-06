@@ -13,9 +13,7 @@ public static class GexReader
     {
         // instrument = "NQ" or "ES"
         string dataDir = Environment.GetEnvironmentVariable("GEX_DATA_DIR")
-            ?? Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
-                "Documents", "GitHub", "OFK_Suite", "OFK_GEX_Pipeline", "data");
+            ?? @"C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data";
 
         string path = Path.Combine(dataDir, $"full_levels_{instrument}.json");
 

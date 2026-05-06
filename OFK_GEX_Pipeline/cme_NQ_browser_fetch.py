@@ -103,8 +103,8 @@ def _d1d2(S, K, T, r, sigma) -> Tuple[float, float]:
 def bs_greeks(S: float, K: float, T: float, r: float, sigma: float,
               is_call: bool) -> Dict[str, float]:
     """
-    Calcule delta, gamma, vanna, charm pour une option BS.
-    Retourne dict avec les 4 Greeks.
+    Computes delta, gamma, vanna, charm for a BS option.
+    Returns a dict with the 4 Greeks.
     """
     if T <= 0 or sigma <= 0 or S <= 0 or K <= 0:
         return {'delta':0, 'gamma':0, 'vanna':0, 'charm':0}
@@ -126,9 +126,9 @@ def bs_greeks(S: float, K: float, T: float, r: float, sigma: float,
         # = -pdf(d1) * d2 / sigma
         vanna = -pdf_d1 * d2 / sigma
 
-        # Charm = ∂delta/∂t (delta decay par unité de temps)
+        # Charm = ∂delta/∂t (delta decay per unit of time)
         # Charm_call = -pdf(d1) * (2rT - d2*sigma*sqrt(T)) / (2T*sigma*sqrt(T))
-        # Convention: charm > 0 → delta augmente avec le temps
+        # Convention: charm > 0 → delta increases with time
         # Charm_call = -pdf(d1) * (2rT - d2*sigma*sqrt(T)) / (2T*sigma*sqrt(T))
         # Charm_put  = charm_call + r*exp(-rT)*N(-d2)
         charm_call = -pdf_d1 * (2*r*T - d2*sigma*sqrt_T) / (2*T*sigma*sqrt_T)
@@ -144,7 +144,7 @@ def bs_greeks(S: float, K: float, T: float, r: float, sigma: float,
 
 def implied_vol(option_price: float, S: float, K: float, T: float,
                 r: float, is_call: bool) -> float:
-    """IV par bisection (60 itérations). Retourne 0.25 si non convergé."""
+    """IV via bisection (60 iterations). Returns 0.25 if not converged."""
     if option_price <= 0 or T <= 0:
         return 0.25
     try:
@@ -167,7 +167,7 @@ def implied_vol(option_price: float, S: float, K: float, T: float,
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Session Playwright
+# Playwright session
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class CMEBrowserSession:
@@ -198,7 +198,7 @@ class CMEBrowserSession:
                 log.info("CME browser ready")
                 break
             except Exception as e:
-                log.warning(f"goto tentative {attempt+1}/3: {e}")
+                log.warning(f"goto attempt {attempt+1}/3: {e}")
                 time.sleep(2)
         return self
 
@@ -235,7 +235,7 @@ class CMEBrowserSession:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Fetchers CME
+# CME fetchers
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_latest_trade_date(session: CMEBrowserSession) -> str:
@@ -257,10 +257,10 @@ def get_latest_trade_date(session: CMEBrowserSession) -> str:
 
 def get_nq_spot_price(session: CMEBrowserSession) -> float:
     """
-    Récupère le dernier prix du NQ futures depuis CME.
-    Essaie plusieurs endpoints avec debug complet.
+    Fetches the latest NQ futures price from CME.
+    Tries several endpoints with full debug output.
     """
-    # Endpoints réels découverts via Network tab CME
+    # Real endpoints discovered via the CME Network tab
     _t = int(time.time() * 1000)
     all_endpoints = [
         CME_BASE + f"/CmeWS/mvc/quotes/v2/146?isProtected&_t={_t}",
@@ -268,8 +268,8 @@ def get_nq_spot_price(session: CMEBrowserSession) -> float:
     ]
 
     for endpoint in all_endpoints:
-        # Utiliser fetch_json qui retourne déjà le JSON parsé
-        # Mais on a besoin du status HTTP pour debug → appel JS direct
+        # Use fetch_json which already returns parsed JSON,
+        # but we need the HTTP status for debug → direct JS call
         result = session._page.evaluate("""
             async (url) => {
                 try {
@@ -329,7 +329,7 @@ def get_all_expirations(session: CMEBrowserSession, trade_date: str) -> List[Dic
             f"?productid={NQ_FUTURES_ID}&tradedate={trade_date}&isProtected")
     data = session.fetch_json(url)
     if not data or not isinstance(data, list):
-        log.warning(f"  Expirations: réponse vide ou invalide: {type(data)} {str(data)[:200]}")
+        log.warning(f"  Expirations: empty or invalid response: {type(data)} {str(data)[:200]}")
         return []
     # DEBUG: print first raw group
     if data:
@@ -363,15 +363,15 @@ def get_all_expirations(session: CMEBrowserSession, trade_date: str) -> List[Dic
 def intercept_settlements_by_page(session: CMEBrowserSession,
                                      pid: int, trade_date_fmt: str) -> Dict:
     """
-    Navigue vers la page settlements du bon type et intercepte le XHR
-    que CME déclenche automatiquement → recupère les vrais paramètres
-    monthYear et optionExpiration, plus les données directement.
+    Navigates to the settlements page of the right type and intercepts the XHR
+    that CME automatically triggers → recovers the real monthYear and
+    optionExpiration parameters, plus the data directly.
     """
     # Resolve parent pid for weekly child PIDs
     page_pid = CME_SETTLEMENTS_PARENT.get(pid, pid)
     page_url = CME_SETTLEMENTS_PAGES.get(page_pid)
     if not page_url:
-        log.debug(f"  Pas de page settlements pour pid={pid}")
+        log.debug(f"  No settlements page for pid={pid}")
         return {}
 
     captured = {}
@@ -386,7 +386,7 @@ def intercept_settlements_by_page(session: CMEBrowserSession,
                 if data and not data.get('empty', True):
                     captured['url']  = url
                     captured['data'] = data
-                    log.info(f"    [{pid}] XHR intercepté: {url[60:120]}")
+                    log.info(f"    [{pid}] XHR intercepted: {url[60:120]}")
             except Exception:
                 pass
 
@@ -408,8 +408,8 @@ def intercept_settlements_by_page(session: CMEBrowserSession,
 
 
 def _get_atm_iv(spot: float, default_iv: float = 0.20) -> float:
-    """IV ATM estimée — utilisée pour les weeklies sans settle prices.
-    En production, sera remplacée par l'IV interpolée depuis la surface standard."""
+    """Estimated ATM IV — used for weeklies without settle prices.
+    In production, will be replaced by IV interpolated from the standard surface."""
     # ~20% implied vol for NQ (adjust based on current VIX)
     # VIX ~20 -> daily IV ~ VIX/sqrt(252) -> annualized ~ 0.20
     return default_iv
@@ -422,11 +422,11 @@ def get_oi_volume_details(session: CMEBrowserSession, pid: int,
                           trade_date: str, exp_code: str,
                           estimated_iv: float = 0.20) -> Dict[float, Dict]:
     """
-    Récupère l'OI par strike pour les weeklies/EOM via Volume/Options/Details.
-    Stratégie :
-      1. Naviguer vers la page volume du bon type (si pas déjà fait pour ce PID)
-         → CME déclenche les XHR automatiquement, établit les cookies
-      2. Appeler directement l'endpoint Volume/Details avec fetch_json
+    Fetches OI per strike for weeklies/EOM via Volume/Options/Details.
+    Strategy:
+      1. Navigate to the volume page of the right type (if not already done for this PID)
+         → CME automatically triggers the XHRs, sets cookies
+      2. Call the Volume/Details endpoint directly with fetch_json
     """
     def _f(v):
         try: return float(str(v).replace(',','').strip()) if v not in (None,'-','') else 0.0
@@ -438,7 +438,7 @@ def get_oi_volume_details(session: CMEBrowserSession, pid: int,
 
     # Navigate to volume page if not already done for this page_pid
     if volume_url and page_pid not in _volume_page_cache:
-        log.info(f"    [Volume page] Navigation pid={page_pid}: {volume_url}")
+        log.info(f"    [Volume page] Navigating pid={page_pid}: {volume_url}")
         try:
             session._page.goto(volume_url, wait_until='domcontentloaded', timeout=20000)
             time.sleep(2)
@@ -492,27 +492,27 @@ def get_oi_standard_with_intraday(session: CMEBrowserSession, pid: int,
                                    contract_id: str, trade_date_fmt: str,
                                    dte: int, estimated_iv: float = 0.20) -> Dict[float, Dict]:
     """
-    STANDARD_PIDS (ex: 148 NQ trimestriel) : combine
-      - OI intraday via Volume/Options/Details?reporttype=F   (mis à jour pendant la session)
-      - Settle prices via Settlements/Options/Settlements/{pid}/OOF  (utilisés pour l'IV inversion)
+    STANDARD_PIDS (e.g. 148 quarterly NQ): combines
+      - Intraday OI via Volume/Options/Details?reporttype=F   (updated during the session)
+      - Settle prices via Settlements/Options/Settlements/{pid}/OOF  (used for IV inversion)
 
-    Si Volume/Details est vide (marché fermé / off-hours), fallback total sur Settlements
-    (qui contient aussi l'OI EOD veille).
+    If Volume/Details is empty (market closed / off-hours), full fallback to Settlements
+    (which also contains the previous-day EOD OI).
     """
-    # 1. OI intraday
+    # 1. Intraday OI
     intraday_oi = get_oi_volume_details(session, pid, trade_date, exp_code,
                                          estimated_iv=estimated_iv)
-    # 2. Settle prices (+ OI EOD comme fallback)
+    # 2. Settle prices (+ EOD OI as fallback)
     settle_data = get_oi_by_strike(session, pid, trade_date, exp_code,
                                     contract_id=contract_id,
                                     trade_date_fmt=trade_date_fmt,
                                     dte=dte)
 
     if not intraday_oi:
-        log.info(f"    [intraday→fallback] {pid}/{exp_code}: Volume/Details vide → Settlements seul")
+        log.info(f"    [intraday→fallback] {pid}/{exp_code}: Volume/Details empty → Settlements only")
         return settle_data
 
-    # 3. Merge : OI intraday préféré, settle prices depuis settlements
+    # 3. Merge: intraday OI preferred, settle prices from settlements
     merged: Dict[float, Dict] = {}
     all_strikes = set(intraday_oi.keys()) | set(settle_data.keys())
     for K in all_strikes:
@@ -536,10 +536,10 @@ def get_oi_by_strike(session: CMEBrowserSession, pid: int,
                      trade_date_fmt: str = '',
                      dte: int = None) -> Dict[float, Dict]:
     """
-    Récupère l'OI par strike depuis l'endpoint Settlements (disponible 24h/24).
-    Utilisé en fallback (off-hours) ou pour les expirations sans données Volume/Details.
+    Fetches OI per strike from the Settlements endpoint (available 24/7).
+    Used as a fallback (off-hours) or for expirations without Volume/Details data.
     """
-    # Settlements contient OI (openInterestCall/Put) et settle prices
+    # Settlements contains OI (openInterestCall/Put) and settle prices
     ts  = int(time.time() * 1000)
     url = (f"{CME_BASE}/CmeWS/mvc/Settlements/Options/Settlements"
            f"/{pid}/OOF"
@@ -584,7 +584,7 @@ def get_oi_by_strike(session: CMEBrowserSession, pid: int,
     if n == 0 and dte is not None and dte <= 2:
         today_fmt = date.today().strftime('%m/%d/%Y')
         if today_fmt != trade_date_fmt:
-            log.info(f"    [{pid}/{exp_code}] dte={dte} → retry avec date du jour {today_fmt}")
+            log.info(f"    [{pid}/{exp_code}] dte={dte} → retry with today's date {today_fmt}")
             url2 = (f"{CME_BASE}/CmeWS/mvc/Settlements/Options/Settlements"
                     f"/{pid}/OOF?strategy=DEFAULT&optionProductId={pid}"
                     f"&monthYear={contract_id}&optionExpiration={pid}-{exp_code}"
@@ -648,15 +648,15 @@ def get_settle_prices(session: CMEBrowserSession, pid: int, *,
 
 
 def _calc_dte(exp_code: str) -> int:
-    """DTE depuis code expiry ex: 'H26' → 3ème vendredi de mars 2026.
-    NOTE: suppose expiration 3e vendredi — incorrect pour les weeklies."""
+    """DTE from expiry code, e.g. 'H26' → 3rd Friday of March 2026.
+    NOTE: assumes 3rd-Friday expiration — incorrect for weeklies."""
     month_map = {'F':1,'G':2,'H':3,'J':4,'K':5,'M':6,
                  'N':7,'Q':8,'U':9,'V':10,'X':11,'Z':12}
     try:
         import calendar
         m  = month_map.get(exp_code[0], 3)
         y  = 2000 + int(exp_code[1:])
-        # 3ème vendredi
+        # 3rd Friday
         c  = calendar.monthcalendar(y, m)
         fs = [w[4] for w in c if w[4] != 0]
         exp_date = date(y, m, fs[2] if len(fs) >= 3 else fs[-1])
@@ -666,7 +666,7 @@ def _calc_dte(exp_code: str) -> int:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Calcul des expositions Greeks
+# Greek exposure computation
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def compute_greek_exposures(
@@ -677,13 +677,13 @@ def compute_greek_exposures(
         r: float = 0.045,
 ) -> Dict[float, Dict]:
     """
-    Pour chaque strike: calcule GEX, VEX, CEX, DEX (calls + puts séparément).
+    For each strike: computes GEX, VEX, CEX, DEX (calls + puts separately).
 
     GEX  = (c_oi × c_gamma  - p_oi × p_gamma)  × mult × S²
     VEX  = (c_oi × c_vanna  + p_oi × p_vanna)  × mult × S
-           (calls et puts ont tous deux vanna positif pour les dealers short puts/long calls)
+           (calls and puts both have positive vanna for dealers short puts/long calls)
     CEX  = (c_oi × c_charm  + p_oi × p_charm)  × mult
-           (charm OTM négatif → dealers rachètent)
+           (OTM charm negative → dealers buy back)
     DEX  = (c_oi × c_delta  + p_oi × p_delta)  × mult × S
            (net dealer delta)
 
@@ -714,20 +714,20 @@ def compute_greek_exposures(
         p_g = bs_greeks(S, K, T, r, p_iv, False)
 
         S2 = S * S
-        # GEX: convention dealer long calls, short puts → calls contrib positive, puts positive aussi
-        # net = calls - puts (puts ont gamma positif mais dealers sont SHORT puts)
+        # GEX: dealer convention long calls, short puts → calls contrib positive, puts also positive
+        # net = calls - puts (puts have positive gamma but dealers are SHORT puts)
         gex = (c_oi * c_g['gamma'] - p_oi * p_g['gamma']) * NQ_MULTIPLIER * S2
 
-        # VEX: vanna mesure dDelta/dIV → dealers sont exposés à IV change
-        # Long call: vanna positive → si IV↑, delta↑, dealers doivent vendre
-        # Short put: vanna positive → si IV↓, delta (absolut) ↓, dealers rachètent
+        # VEX: vanna measures dDelta/dIV → dealers are exposed to IV change
+        # Long call: positive vanna → if IV↑, delta↑, dealers must sell
+        # Short put: positive vanna → if IV↓, delta (absolute) ↓, dealers buy back
         vex = (c_oi * c_g['vanna'] + p_oi * abs(p_g['vanna'])) * NQ_MULTIPLIER * S
 
-        # CEX: charm = delta decay avec le temps
-        # OTM → délta décroît → dealers rachètent (bullish flow into expiry)
+        # CEX: charm = delta decay over time
+        # OTM → delta decays → dealers buy back (bullish flow into expiry)
         cex = (c_oi * c_g['charm'] + p_oi * abs(p_g['charm'])) * NQ_MULTIPLIER
 
-        # DEX: exposition delta nette (directionnel)
+        # DEX: net delta exposure (directional)
         dex = (c_oi * c_g['delta'] + p_oi * p_g['delta']) * NQ_MULTIPLIER * S
 
         exposures[K] = {
@@ -838,8 +838,8 @@ def _compute_skew_25d(exposures: Dict[float, Dict], target_delta: float = 0.25,
              f"  →  skew={skew*100:+.2f} vp")
 
     if c_miss > max_delta_miss or p_miss > max_delta_miss:
-        log.warning(f"    Skew 25Δ: delta miss trop grand (call miss={c_miss:.3f}, put miss={p_miss:.3f})"
-                    f" → skew ignoré")
+        log.warning(f"    Skew 25Δ: delta miss too large (call miss={c_miss:.3f}, put miss={p_miss:.3f})"
+                    f" → skew ignored")
         return 0.0
 
     return skew
@@ -849,12 +849,12 @@ def compute_key_levels(all_exposures: Dict[float, Dict], spot: float,
                        iv_by_dte: Optional[Dict[int, float]] = None,
                        skew_by_dte: Optional[Dict[int, float]] = None) -> Dict:
     """
-    Agrège toutes les expirations et calcule les niveaux clés SpotGamma.
+    Aggregates all expirations and computes the key SpotGamma levels.
 
     iv_by_dte   : optional dict DTE -> ATM IV (front-month → IVx).
     skew_by_dte : optional dict DTE -> 25Δ skew (front-month → headline skew).
     """
-    # Agréger par strike
+    # Aggregate per strike
     agg = defaultdict(lambda: {'gex':0.0, 'vex':0.0, 'cex':0.0, 'dex':0.0})
     for K, exp in all_exposures.items():
         agg[K]['gex'] += exp['gex']
@@ -872,8 +872,8 @@ def compute_key_levels(all_exposures: Dict[float, Dict], spot: float,
     total_dex = sum(d['dex'] for d in agg.values())
 
     # ── Gamma Flip (Zero Gamma) ─────────────────────────────────────────
-    # Strike le plus proche du spot où le GEX cumulé (partant du spot)
-    # change de signe
+    # Strike closest to spot where cumulative GEX (starting from spot)
+    # changes sign
     gamma_flip = spot
     strikes_by_dist = sorted(strikes, key=lambda k: abs(k - spot))
     running_gex = 0.0
@@ -887,7 +887,7 @@ def compute_key_levels(all_exposures: Dict[float, Dict], spot: float,
         prev_sign = sign
 
     # ── Volatility Trigger ──────────────────────────────────────────────
-    # Premier strike au-dessus du spot avec GEX > 0 (transition pinning)
+    # First strike above spot with GEX > 0 (pinning transition)
     vol_trigger = spot
     for K in sorted(strikes):
         if K >= spot and agg[K]['gex'] > 0:
@@ -899,8 +899,8 @@ def compute_key_levels(all_exposures: Dict[float, Dict], spot: float,
     put_wall  = min(agg, key=lambda k: agg[k]['gex'])
 
     # ── Risk Pivot ──────────────────────────────────────────────────────
-    # Premier strike SOUS le spot où GEX devient très négatif
-    # (seuil = 10% du GEX négatif total)
+    # First strike BELOW spot where GEX becomes very negative
+    # (threshold = 10% of total negative GEX)
     neg_gex_total = abs(min(total_gex, 0))
     threshold     = -neg_gex_total * 0.10 if neg_gex_total > 0 else -1e9
     risk_pivot    = spot
@@ -922,7 +922,7 @@ def compute_key_levels(all_exposures: Dict[float, Dict], spot: float,
         prev_sign = sign
 
     # ── Charm Magnet ─────────────────────────────────────────────────────
-    # Strike avec |CEX| maximal = aimant de fin de session (0DTE dominant)
+    # Strike with max |CEX| = end-of-session magnet (0DTE dominant)
     charm_magnet = max(agg, key=lambda k: abs(agg[k]['cex']))
 
     # ── GEX Regime ───────────────────────────────────────────────────────
@@ -949,13 +949,13 @@ def compute_key_levels(all_exposures: Dict[float, Dict], spot: float,
     term = _compute_term_structure(iv_by_dte or {})
 
     return {
-        # Totaux
+        # Totals
         'total_gex'    : total_gex,
         'total_vex'    : total_vex,
         'total_cex'    : total_cex,
         'total_dex'    : total_dex,
 
-        # Niveaux de prix
+        # Price levels
         'gamma_flip'   : gamma_flip,
         'vol_trigger'  : vol_trigger,
         'call_wall'    : call_wall,
@@ -982,22 +982,22 @@ def compute_key_levels(all_exposures: Dict[float, Dict], spot: float,
         'term_slope'    : term['term_slope'],
         'term_regime'   : term['term_regime'],
 
-        # Données brutes par strike (pour sauvegarde/debug)
+        # Raw per-strike data (for save/debug)
         'by_strike'    : {k: dict(v) for k, v in agg.items()},
         'n_strikes'    : len(strikes),
     }
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Pipeline principal
+# Main pipeline
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def fetch_gex_levels(spot: float = 0.0, headless: bool = False) -> Dict:
     """
-    Point d'entrée principal → retourne tous les niveaux.
-    Appelé par ml_server_v3.py.
+    Main entry point → returns all levels.
+    Called by ml_server_v3.py.
 
-    Si spot=0 (défaut), le prix est recupere automatiquement depuis CME quotes.
+    If spot=0 (default), the price is fetched automatically from CME quotes.
     """
     all_exposures_by_strike = defaultdict(lambda: {
         'gex':0.0, 'vex':0.0, 'cex':0.0, 'dex':0.0
@@ -1014,24 +1014,24 @@ def fetch_gex_levels(spot: float = 0.0, headless: bool = False) -> Dict:
         trade_date     = get_latest_trade_date(session)
         trade_date_fmt = f"{trade_date[4:6]}/{trade_date[6:8]}/{trade_date[:4]}"
 
-        # Auto-fetch du spot si non fourni
+        # Auto-fetch the spot if not provided
         if spot <= 0:
-            log.info("Récupération spot NQ depuis CME quotes...")
+            log.info("Fetching NQ spot from CME quotes...")
             spot = get_nq_spot_price(session)
             if spot <= 0:
-                log.warning("Spot non disponible → utilisation du prior settle depuis les données")
-                # Dernier recours : utiliser le strike médian comme proxy
-                spot = 0.0  # sera recalculé après chargement des strikes
+                log.warning("Spot unavailable → falling back to prior settle from the data")
+                # Last resort: use the median strike as a proxy
+                spot = 0.0  # will be recomputed after loading the strikes
 
         expirations = get_all_expirations(session, trade_date)
         if not expirations:
-            log.error("Aucune expiration")
+            log.error("No expiration")
             return {}
 
-        # PIDs standard (settlements disponibles 24h/24)
+        # Standard PIDs (settlements available 24/7)
         STANDARD_PIDS = {148}
-        # PIDs weeklies/EOM : OI via Volume/Details (marché ouvert seulement)
-        # Pas de settle prices → IV estimée depuis surface standard
+        # Weekly/EOM PIDs: OI via Volume/Details (market hours only)
+        # No settle prices → IV estimated from the standard surface
         WEEKLY_PIDS = {5395, 5396, 5397, 5398,
                        9004, 9006, 9007,
                        9009, 9010, 9011, 9012,
@@ -1050,15 +1050,15 @@ def fetch_gex_levels(spot: float = 0.0, headless: bool = False) -> Dict:
             dte = _calc_dte(exp_code)
 
             if pid in WEEKLY_PIDS:
-                # Weeklies : OI depuis Volume/Details (pendant marché)
-                # settle prices absents → IV estimée depuis surface standard
+                # Weeklies: OI from Volume/Details (during market hours)
+                # settle prices absent → IV estimated from the standard surface
                 oi_data = get_oi_volume_details(
                     session, pid, trade_date, exp_code,
                     estimated_iv=_get_atm_iv(spot),
                 )
             elif pid in STANDARD_PIDS:
-                # STANDARD : merge Volume/Details (OI intraday) + Settlements (settle prices)
-                # Fallback automatique sur Settlements seul si off-hours
+                # STANDARD: merge Volume/Details (intraday OI) + Settlements (settle prices)
+                # Automatic fallback to Settlements alone if off-hours
                 oi_data = get_oi_standard_with_intraday(
                     session, pid, trade_date, exp_code,
                     contract_id=f"NQ{exp_code}",
@@ -1076,20 +1076,20 @@ def fetch_gex_levels(spot: float = 0.0, headless: bool = False) -> Dict:
                 )
             if not oi_data: continue
 
-            # settle_data est maintenant inclus dans oi_data (c_settle/p_settle)
+            # settle_data is now included in oi_data (c_settle/p_settle)
             exposures = compute_greek_exposures(oi_data, oi_data, dte, spot)
 
-            # ATM IV + Skew 25Δ pour cette expiration
+            # ATM IV + 25Δ skew for this expiration
             if dte > 0 and exposures:
                 atm_iv = _compute_atm_iv(exposures, spot)
                 if atm_iv > 0:
-                    # Si plusieurs PIDs pour le même DTE, garder le premier vu
+                    # If multiple PIDs share the same DTE, keep the first seen
                     iv_by_dte.setdefault(dte, atm_iv)
                 skew = _compute_skew_25d(exposures)
                 if skew != 0:
                     skew_by_dte.setdefault(dte, skew)
 
-            # Agréger
+            # Aggregate
             for K, ex in exposures.items():
                 all_exposures_by_strike[K]['gex'] += ex['gex']
                 all_exposures_by_strike[K]['vex'] += ex['vex']
@@ -1100,29 +1100,29 @@ def fetch_gex_levels(spot: float = 0.0, headless: bool = False) -> Dict:
                      f"{len(exposures)} strikes")
 
     if not all_exposures_by_strike:
-        log.error("Aucune donnée")
+        log.error("No data")
         return {}
 
-    # Fallback spot si toujours 0 : mediane des strikes (proxy plus fiable que max GEX)
+    # Spot fallback if still 0: median of strikes (more reliable proxy than max GEX)
     if spot <= 0:
         strikes = sorted(all_exposures_by_strike.keys())
         if strikes:
             spot = strikes[len(strikes) // 2]
-            log.warning(f"Spot estimé depuis médiane strikes: {spot:.0f} (fallback)")
+            log.warning(f"Spot estimated from median strike: {spot:.0f} (fallback)")
 
     levels = compute_key_levels(dict(all_exposures_by_strike), spot,
                                  iv_by_dte=iv_by_dte, skew_by_dte=skew_by_dte)
     levels['trade_date'] = trade_date
     levels['spot']       = spot
 
-    # ── Sauvegarde JSON ───────────────────────────────────────────────────────
+    # ── JSON save ─────────────────────────────────────────────────────────────
     _json_path = GEX_OUTPUT_PATH
     _json_path.parent.mkdir(parents=True, exist_ok=True)
     save = {k: v for k, v in levels.items() if k != 'by_strike'}
     save['by_strike_sample'] = dict(list(levels['by_strike'].items())[:10])
     with open(_json_path, 'w') as f:
         json.dump(save, f, indent=2)
-    log.info(f"  JSON sauvegardé → {_json_path}")
+    log.info(f"  JSON saved → {_json_path}")
 
     log.info(
         f"IVx={levels['atm_iv_front']*100:.1f}%  "
@@ -1145,11 +1145,11 @@ def fetch_gex_levels(spot: float = 0.0, headless: bool = False) -> Dict:
 
 def gex_to_ml_features(levels: Dict, spot: float, atr: float) -> Dict[str, float]:
     """
-    Convertit les niveaux GEX en features normalisees pour le ML.
-    Toutes les distances sont normalisees par l'ATR pour l'invariance de prix.
+    Converts GEX levels into normalized features for the ML model.
+    All distances are normalized by ATR for price invariance.
 
-    Returns dict avec exactement les features FEATURES_GEX + FEATURES_GREEK_EXP
-    définis dans feature_schema_v3.py
+    Returns a dict with exactly the FEATURES_GEX + FEATURES_GREEK_EXP features
+    defined in feature_schema_v3.py.
     """
     if not levels or atr <= 0:
         return {k: 0.0 for k in [
@@ -1202,7 +1202,7 @@ def main():
         sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     parser = argparse.ArgumentParser()
     parser.add_argument('--spot',        type=float, default=0,
-                        help="Prix spot NQ (0=auto depuis CME quotes)")
+                        help="NQ spot price (0=auto from CME quotes)")
     parser.add_argument('--test-expiry', action='store_true')
     parser.add_argument('--test-quotes', action='store_true',
                         help="Test spot price fetch only")
@@ -1211,13 +1211,13 @@ def main():
 
     headless = False  # Always visible — Akamai blocks headless Chromium
     print(f"=== CME Options Greeks Fetcher ({'visible' if not headless else 'headless'}) ===")
-    print(f"  Spot: {'auto (CME quotes)' if args.spot==0 else f'{args.spot:.2f} (manuel)'}")
+    print(f"  Spot: {'auto (CME quotes)' if args.spot==0 else f'{args.spot:.2f} (manual)'}")
 
     # Test spot fetch only
     if args.test_quotes:
         with CMEBrowserSession(headless=headless) as session:
             price = get_nq_spot_price(session)
-            print(f"\n  NQ Spot: {price:.2f}" if price > 0 else "\n  ECHEC: aucun prix recupere")
+            print(f"\n  NQ Spot: {price:.2f}" if price > 0 else "\n  FAILED: no price retrieved")
         return
 
     if args.test_expiry:
@@ -1258,9 +1258,9 @@ def main():
         print(f"  Strikes        : {lv['n_strikes']}")
         print(f"  Trade Date     : {lv['trade_date']}")
 
-        # ── Features ML normalisees (validation post-fetch) ──────────────────
-        # Utilise l'ATR approximatif ~0.5% du spot pour affichage
-        # Les valeurs réelles en production utilisent l'ATR(14) NinjaTrader
+        # ── Normalized ML features (post-fetch validation) ───────────────────
+        # Uses an approximate ATR ~0.5% of spot for display
+        # Real production values use the NinjaTrader ATR(14)
         atr_approx = spot * 0.005
         features = gex_to_ml_features(lv, spot, atr_approx)
         print('')

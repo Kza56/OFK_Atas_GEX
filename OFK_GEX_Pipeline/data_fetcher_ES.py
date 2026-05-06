@@ -158,9 +158,9 @@ def calc_expected_move(spot: float, contracts: list) -> float:
 
 
 def calc_expected_move_tt(contracts: list, spot: float) -> dict:
-    """Expected Move façon TastyTrade (Phase 2).
+    """Expected Move TastyTrade-style (Phase 2).
 
-    Formule pondérée des straddles/strangles ATM :
+    Weighted formula on ATM straddles/strangles:
         EM = (ATM_straddle × 0.6) + (1st_OTM_strangle × 0.3) + (2nd_OTM_strangle × 0.1)
     """
     valid = [c for c in contracts
@@ -238,7 +238,7 @@ def calc_top_strikes(contracts: list, n: int = 10) -> list:
     return sorted(by_strike.values(), key=lambda x: x["total_oi"], reverse=True)[:n]
 
 def calc_skew_25d(contracts: list, spot: float, max_delta_miss: float = 0.10) -> dict:
-    """Skew 25Δ CBOE pour chaque expiration disponible.
+    """CBOE 25Δ skew for each available expiration.
 
     Returns dict with:
       - skew_25d_cboe          : front-DTE skew (backward compat)
@@ -301,7 +301,7 @@ def calc_skew_25d(contracts: list, spot: float, max_delta_miss: float = 0.10) ->
 
 
 def calc_atm_iv_intraday(contracts: list, spot: float, max_dte: int = 7) -> dict:
-    """ATM IV pour les expirations 0-7 DTE (horizon scalping)."""
+    """ATM IV for 0-7 DTE expirations (scalping horizon)."""
     by_dte: dict = {}
     for c in contracts:
         if c["dte"] < 0 or c["dte"] > max_dte or c["iv"] <= 0:
@@ -333,7 +333,7 @@ def calc_term_intraday(contracts: list, spot: float,
                        front_target_dte: int = 0,
                        back_target_dte: int = 30) -> dict:
     """Term structure scalping: front (~0DTE) vs back (~30 DTE).
-    Backwardation = stress immédiat. Contango = marché serein."""
+    Backwardation = immediate stress. Contango = calm market."""
     by_dte: dict = {}
     for c in contracts:
         if c["dte"] < 0 or c["iv"] <= 0:
@@ -378,9 +378,9 @@ def calc_term_intraday(contracts: list, spot: float,
 
 
 def calc_zero_dte_metrics(contracts: list, spot: float) -> dict:
-    """Métriques 0DTE (Max Pain, Pin Strike, Charm Magnet) sur options expirant
-    aujourd'hui (ou demain si pas d'expiration ce jour).
-    Suffixe _spy car valeurs en strikes SPY (à convertir en ES côté merge)."""
+    """0DTE metrics (Max Pain, Pin Strike, Charm Magnet) on options expiring
+    today (or tomorrow if no expiration today).
+    _spy suffix because values are SPY strikes (to be converted to ES on the merge side)."""
     zero_dte = [c for c in contracts if c["dte"] == 0 and c["oi"] > 0]
     used_dte = 0
     if not zero_dte:
@@ -403,7 +403,7 @@ def calc_zero_dte_metrics(contracts: list, spot: float) -> dict:
             min_pain = pain
             max_pain_strike = s
 
-    # Pin Strike 0DTE: gamma absolu combiné maximal
+    # 0DTE Pin Strike: max combined absolute gamma
     by_strike: dict = {}
     for c in zero_dte:
         k = c["strike"]
@@ -415,7 +415,7 @@ def calc_zero_dte_metrics(contracts: list, spot: float) -> dict:
     pin_strike = (max(by_strike.values(), key=lambda x: x["gex_abs"])["strike"]
                   if by_strike else 0.0)
 
-    # Charm Magnet 0DTE proxy
+    # 0DTE Charm Magnet proxy
     total_oi = sum(c["oi"] for c in zero_dte)
     charm_candidates = [
         (k, v) for k, v in by_strike.items()
@@ -434,7 +434,7 @@ def calc_zero_dte_metrics(contracts: list, spot: float) -> dict:
 
 
 def calc_walls_intraday(contracts: list, spot: float, max_dte: int = 7) -> dict:
-    """Call Wall / Put Wall pour les options 0-7 DTE (intraday scalping)."""
+    """Call Wall / Put Wall for 0-7 DTE options (intraday scalping)."""
     by_strike: dict = {}
     for c in contracts:
         if c["dte"] < 0 or c["dte"] > max_dte:
@@ -463,9 +463,9 @@ def calc_walls_intraday(contracts: list, spot: float, max_dte: int = 7) -> dict:
 
 def calc_volume_flow_levels(contracts: list, spot: float,
                               max_dte: int = 7, n: int = 3) -> dict:
-    """Volume Flow V1/V2/V3 — strikes avec le plus gros volume du jour
-    (Phase 7, TanukiTrade-style). Capture où le flow smart money est
-    concentré aujourd'hui.
+    """Volume Flow V1/V2/V3 — strikes with the highest volume of the day
+    (Phase 7, TanukiTrade-style). Captures where the smart-money flow
+    is concentrated today.
     """
     by_strike: dict = {}
     for c in contracts:
@@ -498,8 +498,8 @@ def calc_volume_flow_levels(contracts: list, spot: float,
 def calc_extended_walls(contracts: list, spot: float, max_dte: int = 7,
                          n: int = 4, exclude: list = None) -> dict:
     """Extended GEX walls (Phase 6, TanukiTrade GEX7-GEX10).
-    4 strikes supplémentaires triés par |net_gex| décroissant. Chaque strike
-    est typé call/put selon le signe du net_gex.
+    4 additional strikes sorted by descending |net_gex|. Each strike is
+    labeled call/put by the sign of net_gex.
     """
     by_strike: dict = {}
     for c in contracts:
@@ -533,9 +533,9 @@ def calc_extended_walls(contracts: list, spot: float, max_dte: int = 7,
 
 def calc_abs_gex_levels(contracts: list, spot: float,
                          max_dte: int = 7, n: int = 3) -> dict:
-    """Abs GEX (Absolute Gamma Exposure) Ab1/Ab2/Ab3 — strikes avec la
-    gamma totale absolue (call + put combinés) la plus élevée (Phase 5,
-    TanukiTrade-style). Capture les zones de pin risk fort.
+    """Abs GEX (Absolute Gamma Exposure) Ab1/Ab2/Ab3 — strikes with the
+    highest total absolute gamma (calls + puts combined) (Phase 5,
+    TanukiTrade-style). Captures strong pin-risk zones.
     """
     by_strike: dict = {}
     for c in contracts:
@@ -559,8 +559,8 @@ def calc_abs_gex_levels(contracts: list, spot: float,
 
 
 def calc_dex_levels(contracts: list, spot: float, max_dte: int = 7) -> dict:
-    """DEX (Delta Exposure) D+ / D- — strikes avec la plus grosse pression de
-    hedging directionnelle (Phase 4, TanukiTrade-style).
+    """DEX (Delta Exposure) D+ / D- — strikes with the highest directional
+    hedging pressure (Phase 4, TanukiTrade-style).
     """
     by_strike: dict = {}
     for c in contracts:
@@ -596,13 +596,13 @@ def calc_dex_levels(contracts: list, spot: float, max_dte: int = 7) -> dict:
 
 def calc_transition_levels(contracts: list, spot: float,
                             max_dte: int = 7, threshold_pct: float = 0.10) -> dict:
-    """cTrans / pTrans — niveaux de transition où la gamma call/put commence à
-    dominer (Phase 3, inspiré TanukiTrade Gamma Classification Engine).
+    """cTrans / pTrans — transition levels where call/put gamma starts
+    dominating (Phase 3, inspired by TanukiTrade's Gamma Classification Engine).
 
-    Méthode: depuis le spot, on cumule le net GEX en montant (resp descendant).
-    Le cTrans est le premier strike au-dessus du spot où le cumul positif dépasse
-    threshold_pct du gamma absolu total (10% par défaut). pTrans est l'équivalent
-    négatif descendant.
+    Method: starting from spot, we accumulate net GEX going up (resp. down).
+    cTrans is the first strike above spot where the positive cumulative
+    exceeds threshold_pct of total absolute gamma (10% by default). pTrans
+    is the negative descending equivalent.
     """
     by_strike: dict = {}
     for c in contracts:
@@ -653,7 +653,7 @@ def calc_transition_levels(contracts: list, spot: float,
 
 
 def calc_top_strikes_intraday(contracts: list, max_dte: int = 7, n: int = 3) -> list:
-    """Top OI strikes pour les options 0-7 DTE."""
+    """Top OI strikes for 0-7 DTE options."""
     by_strike: dict = {}
     for c in contracts:
         if c["dte"] < 0 or c["dte"] > max_dte:
@@ -670,9 +670,9 @@ def calc_top_strikes_intraday(contracts: list, max_dte: int = 7, n: int = 3) -> 
 
 
 def build_levels_ES(max_dte: int = 7) -> dict:
-    """Construit le JSON CBOE SPY (ES proxy).
-    max_dte=7  → mode 'cumulative' (TanukiTrade ∑) — agrège 0-7 DTE
-    max_dte=0  → mode 'selected'    (TanukiTrade ⊙) — uniquement 0DTE
+    """Builds the CBOE SPY JSON (ES proxy).
+    max_dte=7  → 'cumulative' mode (TanukiTrade ∑) — aggregates 0-7 DTE
+    max_dte=0  → 'selected' mode   (TanukiTrade ⊙) — 0DTE only
     """
     mode = "selected" if max_dte == 0 else f"cumulative_0-{max_dte}d"
     print("=" * 55)
@@ -778,8 +778,8 @@ def build_levels_ES(max_dte: int = 7) -> dict:
         dm = dex_intraday.get('dex_minus_intraday')
         dp_str = f"${dp:.2f}" if dp else "—"
         dm_str = f"${dm:.2f}" if dm else "—"
-        print(f"  D+ DEX        : {dp_str}  [dealers achètent → bullish]  [0-7d]")
-        print(f"  D- DEX        : {dm_str}  [dealers vendent → bearish]   [0-7d]")
+        print(f"  D+ DEX        : {dp_str}  [dealers buy → bullish]  [0-7d]")
+        print(f"  D- DEX        : {dm_str}  [dealers sell → bearish] [0-7d]")
     for i in range(1, 4):
         ab = abs_gex_intraday.get(f"abs_gex_intraday_{i}")
         if ab:
@@ -805,7 +805,7 @@ def build_levels_ES(max_dte: int = 7) -> dict:
         print(f"{'─'*55}")
         print(f"  Max Pain 0DTE : ${zero_dte['max_pain_0dte_spy']}  ({d}DTE)")
         print(f"  Pin Strike 0D : ${zero_dte['pin_strike_0dte_spy']}  (gamma max {d}DTE)")
-        print(f"  Charm Mag. 0D : ${zero_dte['charm_magnet_0dte_spy']}  (proche spot, OI > 5%)")
+        print(f"  Charm Mag. 0D : ${zero_dte['charm_magnet_0dte_spy']}  (near spot, OI > 5%)")
     print(f"{'─'*55}")
     iv_id = iv_intraday.get("atm_iv_intraday", 0)
     if iv_id:
@@ -836,6 +836,6 @@ if __name__ == "__main__":
     import argparse
     p = argparse.ArgumentParser()
     p.add_argument("--max-dte", type=int, default=7,
-                   help="DTE max pour métriques intraday. 7=cumulative ∑ (default), 0=selected ⊙ (0DTE only).")
+                   help="Max DTE for intraday metrics. 7=cumulative ∑ (default), 0=selected ⊙ (0DTE only).")
     args = p.parse_args()
     build_levels_ES(max_dte=args.max_dte)

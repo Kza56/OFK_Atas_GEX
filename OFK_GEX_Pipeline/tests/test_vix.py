@@ -1,4 +1,4 @@
-"""Tests classification VIX — Bloc 1."""
+"""Tests for VIX classification — Block 1."""
 from vix_fetcher import _classify_regime, _classify_term
 
 
@@ -30,7 +30,7 @@ def test_regime_unknown_invalid():
 
 
 def test_term_backwardation_when_vix9d_above():
-    # VIX9D > VIX + 0.5 → backwardation (stress court terme)
+    # VIX9D > VIX + 0.5 -> backwardation (short-term stress)
     assert _classify_term(vix=15, vix9d=16) == "backwardation"
     assert _classify_term(vix=20, vix9d=22) == "backwardation"
 

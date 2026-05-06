@@ -1,5 +1,5 @@
 """
-generate_pdf_NQ.py — Génère le briefing NQ en PDF fond sombre
+generate_pdf_NQ.py — Generates the NQ briefing as a dark-theme PDF
 Usage  : py generate_pdf_NQ.py
 Output : <DATA_DIR>/briefing_NQ_YYYY-MM-DD.pdf  (DATA_DIR from config.py)
 """
@@ -68,7 +68,7 @@ def S(name, **kw):
 
 def nq_val(d):
     if isinstance(d, dict):
-        return (d.get("nq") or d.get("nq_approx") or
+        return (d.get("nq") or d.get("nq_approx") or d.get("approx_price_nq") or
                 d.get("prix_nq_approx") or d.get("prix_nq") or "?")
     return d or "?"
 
@@ -110,7 +110,7 @@ def build_pdf(briefing: dict) -> Path:
             st.append(("LINEBELOW",(0,0),(-1,-1),0.3,C_BORDER))
         return TableStyle(st)
 
-    heure = (briefing.get("heure_generation") or "").replace(" ET","").strip()
+    heure = (briefing.get("generation_time") or briefing.get("heure_generation") or "").replace(" ET","").strip()
 
     # Header
     hdr = Table([[Paragraph("GEX AGENT — NQ SCALPING BRIEFING", T_H1)]], colWidths=[W])
@@ -132,7 +132,7 @@ def build_pdf(briefing: dict) -> Path:
     vix_reg  = (mc.get("vix_regime") or "?").upper()
     vix_term = mc.get("vix_term") or "?"
     macro_bl = mc.get("macro_in_blackout", False)
-    macro_ev = mc.get("macro_next_event") or "RAS"
+    macro_ev = mc.get("macro_next_event") or "None"
     macro_mn = mc.get("macro_minutes_to_next", -1)
     data_q   = (mc.get("data_quality") or "?").upper()
 
@@ -156,7 +156,7 @@ def build_pdf(briefing: dict) -> Path:
         macro_text = f"<b>MACRO {int(macro_mn)}min</b><br/><font size=7>{macro_ev}</font>"
         macro_col, macro_bg = C_ORANGE, C_ORANGE_BG
     else:
-        macro_text = f"<b>MACRO RAS</b><br/><font size=7>{macro_ev}</font>"
+        macro_text = f"<b>MACRO CLEAR</b><br/><font size=7>{macro_ev}</font>"
         macro_col, macro_bg = C_GREEN, C_GREEN_BG
 
     data_color_map = {
@@ -250,9 +250,15 @@ def build_pdf(briefing: dict) -> Path:
     levels_key = "levels" if "levels" in briefing else "niveaux"
     for i, n in enumerate(briefing.get(levels_key, [])):
         ntype = n.get("type", "?")
-        prix  = (n.get("nq_price") or n.get("prix_nq_approx") or
-                 n.get("prix_nq") or "?")
-        dist  = n.get("distance_pct") or n.get("distance_spot_pct") or 0
+        prix  = (n.get("nq_price") or n.get("approx_price_nq") or
+                 n.get("prix_nq_approx") or n.get("prix_nq") or "?")
+        # Walk keys with `is not None` so a legitimate 0.0 isn't collapsed by `or`.
+        dist = None
+        for key in ("distance_pct", "spot_distance_pct", "distance_spot_pct"):
+            v = n.get(key)
+            if v is not None:
+                dist = v
+                break
         compt = (n.get("dealer_behavior") or n.get("comportement_dealers") or "")
         label, col = LEVEL_CFG.get(ntype, (ntype, C_WHITE))
         dist_str = f"{dist:+.2f}%" if isinstance(dist,(int,float)) else "?"
@@ -284,10 +290,10 @@ def build_pdf(briefing: dict) -> Path:
 
     # RTH Plan
     p = briefing.get("rth_plan", briefing.get("plan_rth", {}))
-    za = nq_val(p.get("buy_zone_nq")             or p.get("zone_achat"))
-    zv = nq_val(p.get("sell_zone_nq")            or p.get("zone_vente"))
-    ih = nq_val(p.get("bullish_invalidation_nq") or p.get("invalidation_haussiere"))
-    ib = nq_val(p.get("bearish_invalidation_nq") or p.get("invalidation_baissiere"))
+    za = nq_val(p.get("buy_zone")             or p.get("buy_zone_nq")             or p.get("zone_achat"))
+    zv = nq_val(p.get("sell_zone")            or p.get("sell_zone_nq")            or p.get("zone_vente"))
+    ih = nq_val(p.get("bullish_invalidation") or p.get("bullish_invalidation_nq") or p.get("invalidation_haussiere"))
+    ib = nq_val(p.get("bearish_invalidation") or p.get("bearish_invalidation_nq") or p.get("invalidation_baissiere"))
 
     story.append(Paragraph("RTH PLAN", T_SECT))
     plan_items = [
@@ -335,7 +341,7 @@ def build_pdf(briefing: dict) -> Path:
         story.append(at); story.append(Spacer(1, 2*mm))
 
     # One-liner
-    one_liner = briefing.get("one_liner") or briefing.get("resume_une_ligne") or ""
+    one_liner = briefing.get("one_line_summary") or briefing.get("one_liner") or briefing.get("resume_une_ligne") or ""
     if one_liner:
         res = Table([[Paragraph(f">>  {one_liner}", T_RES)]], colWidths=[W])
         res.setStyle(TableStyle([
@@ -348,11 +354,11 @@ def build_pdf(briefing: dict) -> Path:
     # Footer
     story.append(HRFlowable(width=W, thickness=0.3, color=C_BORDER))
     story.append(Paragraph(
-        "GEX Agent NQ  |  CME NQ Options + CBOE QQQ  |  Usage personnel — pas un conseil financier",
+        "GEX Agent NQ  |  CME NQ Options + CBOE QQQ  |  Personal use — not financial advice",
         T_FOOT))
 
 
-    # Auto-nettoyage : supprimer les anciens PDF NQ du même contrat
+    # Auto-cleanup: remove older NQ PDFs from the same contract
     for old_pdf in OUTPUT_DIR.glob("briefing_NQ_*.pdf"):
         if old_pdf != output:
             try:

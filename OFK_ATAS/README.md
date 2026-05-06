@@ -4,6 +4,23 @@ ATAS indicators that read the GEX/options levels produced by the Python pipeline
 
 ---
 
+## Installation
+
+**Required path**: extract the repository into `C:\OFK_Atas_GEX\` (root of the C: drive).
+
+Reason: the ATAS indicator default settings (JSON path, Python script paths, PDF folder) are pre-configured to point to `C:\OFK_Atas_GEX\OFK_GEX_Pipeline\...`. Installing elsewhere requires manual editing of these parameters in the ATAS UI for each indicator.
+
+### Steps
+
+1. Download the latest release ZIP from GitHub
+2. Extract to `C:\OFK_Atas_GEX\` (so that `C:\OFK_Atas_GEX\OFK_ATAS\` and `C:\OFK_Atas_GEX\OFK_GEX_Pipeline\` exist)
+3. Build the indicators: `cd C:\OFK_Atas_GEX\OFK_ATAS && dotnet build OFK_Atas_GEX.csproj -c Release`
+4. Copy the DLL: `Copy-Item "bin\Release\net10.0-windows\OFK_Atas_GEX.dll" "$env:APPDATA\ATAS\Indicators\" -Force`
+5. Install Python dependencies: `cd C:\OFK_Atas_GEX\OFK_GEX_Pipeline && pip install -r requirements.txt && playwright install chromium`
+6. Restart ATAS — indicators will appear under "OFK Suite"
+
+---
+
 ## Included indicators
 
 | File | Display name | Description |
@@ -65,8 +82,8 @@ The 4 indicators appear under **OFK Suite**:
 The pipeline that produces the JSON files consumed by the indicators lives in `OFK_GEX_Pipeline/`. See `OFK_GEX_Pipeline/CLAUDE.md` for its architecture and `docs/integration_handoff/` for the output contract.
 
 The indicators read by default from:
-- `C:\Users\<user>\Documents\GitHub\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_NQ.json`
-- `C:\Users\<user>\Documents\GitHub\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_ES.json`
+- `C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_NQ.json`
+- `C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_ES.json`
 
 The path is adjustable in each indicator's settings (group `01.Source`, parameter `JSON Path`).
 

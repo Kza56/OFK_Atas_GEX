@@ -15,19 +15,19 @@ from datetime import date
 from pathlib import Path
 from typing import Any, Dict
 
-# ── Schema version (Bloc 7 — versioning + health check) ─────────────────────
-# Incrémenter à chaque évolution de la structure du JSON full_levels_*.
-# L'indicateur ATAS lit cette version et affiche un warning si mismatch.
+# ── Schema version (Block 7 — versioning + health check) ────────────────────
+# Increment on every change to the full_levels_* JSON structure.
+# The ATAS indicator reads this version and shows a warning on mismatch.
 JSON_SCHEMA_VERSION: str = "1.0"
 
 
 def compute_data_quality(full_dict: Dict[str, Any]) -> str:
-    """Détermine la qualité globale des données dans full_levels_*.json.
+    """Determine the overall data quality in full_levels_*.json.
 
-    Renvoie:
-      "ok"      : toutes les sources principales (CME + CBOE + VIX) présentes
-      "partial" : au moins une source manque (mais pas critique)
-      "error"   : structure cassée / dict vide
+    Returns:
+      "ok"      : all main sources (CME + CBOE + VIX) present
+      "partial" : at least one source missing (but not critical)
+      "error"   : broken structure / empty dict
     """
     if not full_dict:
         return "error"
@@ -83,7 +83,7 @@ ES_PROMPT_FILE:   Path = DATA_DIR / "_prompt_ES.txt"
 # Claude Code CLI (npm-installed). Override via env CLAUDE_CMD.
 CLAUDE_CMD: str = os.environ.get(
     "CLAUDE_CMD",
-    r"C:\Users\steph\AppData\Roaming\npm\claude.cmd"
+    "claude.cmd"
 )
 
 
@@ -94,18 +94,18 @@ def ensure_dirs() -> None:
     INTRADAY_HISTORY_DIR.mkdir(parents=True, exist_ok=True)
 
 
-# Rétention des snapshots quotidiens. Au-delà → suppression.
-# 380 jours = 1 an + 15 jours de marge (suffit pour IV Rank 252j).
+# Daily snapshot retention. Beyond this → deletion.
+# 380 days = 1 year + 15 days margin (enough for 252-day IV Rank).
 HISTORY_MAX_DAYS: int = int(os.environ.get("GEX_HISTORY_MAX_DAYS", "380"))
 
-# Rétention des snapshots intraday (replay feature). 7 jours par défaut.
-# 7 jours × ~80 snapshots/jour × ~50KB ≈ 28 MB par symbole — acceptable.
+# Intraday snapshot retention (replay feature). 7 days by default.
+# 7 days × ~80 snapshots/day × ~50KB ≈ 28 MB per symbol — acceptable.
 INTRADAY_HISTORY_MAX_DAYS: int = int(os.environ.get("GEX_INTRADAY_HISTORY_MAX_DAYS", "7"))
 
 
 def cleanup_history(symbol: str, max_days: int = HISTORY_MAX_DAYS) -> int:
-    """Supprime les snapshots {symbol}_full_levels_*.json plus vieux que max_days.
-    Renvoie le nombre de fichiers supprimés."""
+    """Remove {symbol}_full_levels_*.json snapshots older than max_days.
+    Returns the number of files removed."""
     if not HISTORY_DIR.exists():
         return 0
     from datetime import datetime, timedelta
@@ -114,7 +114,7 @@ def cleanup_history(symbol: str, max_days: int = HISTORY_MAX_DAYS) -> int:
     deleted = 0
     for snap in HISTORY_DIR.glob(pattern):
         try:
-            # Extraire YYYYMMDD du nom: {SYM}_full_levels_YYYYMMDD.json
+            # Extract YYYYMMDD from filename: {SYM}_full_levels_YYYYMMDD.json
             stem = snap.stem  # ES_full_levels_20260430
             date_str = stem.split("_")[-1]
             if len(date_str) != 8:
@@ -136,7 +136,7 @@ def save_snapshot(symbol: str, full_dict: Dict[str, Any]) -> Path:
     Date source: full_dict['trade_date'] if present, else today.
     Same-day re-runs overwrite the existing snapshot (idempotent).
 
-    Lance aussi cleanup_history() pour respecter HISTORY_MAX_DAYS.
+    Also calls cleanup_history() to enforce HISTORY_MAX_DAYS.
 
     Returns the path written.
     """
@@ -148,15 +148,15 @@ def save_snapshot(symbol: str, full_dict: Dict[str, Any]) -> Path:
     HISTORY_DIR.mkdir(parents=True, exist_ok=True)
     path = HISTORY_DIR / f"{symbol}_full_levels_{trade_date}.json"
     path.write_text(json.dumps(full_dict, indent=2))
-    # Cleanup automatique (rétention glissante)
+    # Automatic cleanup (rolling retention)
     cleanup_history(symbol)
     return path
 
 
 def cleanup_intraday_history(symbol: str,
                              max_days: int = INTRADAY_HISTORY_MAX_DAYS) -> int:
-    """Supprime les snapshots intraday {symbol}_full_levels_*_*.json plus
-    vieux que max_days. Renvoie le nombre de fichiers supprimés."""
+    """Remove intraday {symbol}_full_levels_*_*.json snapshots older
+    than max_days. Returns the number of files removed."""
     if not INTRADAY_HISTORY_DIR.exists():
         return 0
     from datetime import datetime, timedelta
@@ -183,12 +183,12 @@ def cleanup_intraday_history(symbol: str,
 
 def save_intraday_snapshot(symbol: str, full_dict: Dict[str, Any]) -> Path:
     """
-    Persist un snapshot intraday horodaté dans INTRADAY_HISTORY_DIR.
+    Persist a timestamped intraday snapshot into INTRADAY_HISTORY_DIR.
 
     Filename: {symbol}_full_levels_{YYYYMMDD}_{HHMM}.json
-    Timestamp = now (local time, granularité minute).
+    Timestamp = now (local time, minute granularity).
 
-    Lance aussi cleanup_intraday_history() pour respecter
+    Also calls cleanup_intraday_history() to enforce
     INTRADAY_HISTORY_MAX_DAYS.
 
     Returns the path written.
@@ -206,15 +206,15 @@ def save_intraday_snapshot(symbol: str, full_dict: Dict[str, Any]) -> Path:
 
 def compute_iv_rank(symbol: str, current_iv: float, lookback_days: int = 252,
                     iv_field: str = "atm_iv_intraday") -> Dict[str, Any]:
-    """IV Rank: position de current_iv dans la fenêtre lookback_days passés.
+    """IV Rank: position of current_iv within the past lookback_days window.
 
     IVR = (IV - IVmin) / (IVmax - IVmin) × 100  → 0-100%
-    IVR < 30 = vol basse, marché complaisant
-    IVR > 70 = vol élevée, stress, mean-reversion à privilégier sur la vol
+    IVR < 30 = low vol, complacent market
+    IVR > 70 = high vol, stress, prefer vol mean-reversion
 
-    Lit les snapshots {symbol}_full_levels_*.json dans HISTORY_DIR.
-    Renvoie dict avec ivr, iv_min, iv_max, n_samples, status.
-    Status: 'ok' si >= 20 jours, 'partial' si 5-19, 'insufficient' si < 5.
+    Reads {symbol}_full_levels_*.json snapshots in HISTORY_DIR.
+    Returns dict with ivr, iv_min, iv_max, n_samples, status.
+    Status: 'ok' if >= 20 days, 'partial' if 5-19, 'insufficient' if < 5.
     """
     if not HISTORY_DIR.exists() or current_iv <= 0:
         return {"ivr": None, "status": "insufficient", "n_samples": 0}
@@ -235,7 +235,7 @@ def compute_iv_rank(symbol: str, current_iv: float, lookback_days: int = 252,
                 continue
             data = json.loads(snap.read_text())
             iv = data.get(iv_field)
-            # Fallback sur l'ancien nom si présent
+            # Fallback to the legacy name if present
             if iv is None or iv <= 0:
                 iv = data.get("atm_iv_front")
             if iv and iv > 0:
@@ -269,16 +269,16 @@ def compute_iv_rank(symbol: str, current_iv: float, lookback_days: int = 252,
 
 
 def update_session_log(symbol: str, trade_date: str, spot: float) -> None:
-    """Met à jour le snapshot du jour avec open_rth_spot/close_rth_spot.
+    """Update today's snapshot with open_rth_spot/close_rth_spot.
 
-    Logique:
-    - Si open_rth_spot n'existe pas (premier appel du jour pendant RTH):
-      le spot courant devient l'open.
-    - Toujours: close_rth_spot = spot courant (le dernier refresh
-      gagne, donc le close = dernier refresh avant la fin de session).
-    - intraday_refresh_count incrémenté.
+    Logic:
+    - If open_rth_spot does not exist (first call of the day during RTH):
+      the current spot becomes the open.
+    - Always: close_rth_spot = current spot (the last refresh wins,
+      so close = last refresh before session end).
+    - intraday_refresh_count incremented.
 
-    Appelé par run_intraday_refresh.py à chaque refresh CBOE.
+    Called by run_intraday_refresh.py on each CBOE refresh.
     """
     if not trade_date or spot <= 0:
         return

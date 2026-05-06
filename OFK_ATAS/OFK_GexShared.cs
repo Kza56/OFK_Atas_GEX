@@ -1,16 +1,16 @@
 // ============================================================================
-//  OFK_GexShared.cs — Classes partagées entre indicateurs OFK GEX
+//  OFK_GexShared.cs — Shared classes between OFK GEX indicators
 //
-//  Contient:
-//   - GexSnapshot  : snapshot immutable des niveaux GEX/options/walls
-//   - MetaSnapshot : snapshot immutable du contexte VIX + macro + health
-//   - GexLoader    : chargeur unique du JSON full_levels_*.json (NQ ou ES)
+//  Contains:
+//   - GexSnapshot  : immutable snapshot of GEX/options/walls levels
+//   - MetaSnapshot : immutable snapshot of VIX + macro + health context
+//   - GexLoader    : single loader for full_levels_*.json (NQ or ES)
 //
-//  Utilisé par:
-//   - OFK_NQ_GEX_Levels.cs     (lecture full_levels_NQ.json)
-//   - OFK_ES_GEX_Levels.cs     (lecture full_levels_ES.json)
-//   - OFK_NQ_ContextScore.cs   (à venir)
-//   - OFK_ES_ContextScore.cs   (à venir)
+//  Used by:
+//   - OFK_NQ_GEX_Levels.cs     (reads full_levels_NQ.json)
+//   - OFK_ES_GEX_Levels.cs     (reads full_levels_ES.json)
+//   - OFK_NQ_ContextScore.cs   (upcoming)
+//   - OFK_ES_ContextScore.cs   (upcoming)
 // ============================================================================
 using System;
 using System.IO;
@@ -184,15 +184,15 @@ namespace OFK_GEX
         }
     }
 
-    // ── OfkUtils : helpers partagés ──────────────────────────────────────────
+    // ── OfkUtils : shared helpers ────────────────────────────────────────────
     public static class OfkUtils
     {
         /// <summary>
-        /// Résout un chemin d'exécutable. Si <paramref name="exePath"/> est un
-        /// chemin absolu existant, retourne tel quel. Sinon, cherche le nom
-        /// dans la variable d'environnement PATH (utile pour spawn Process.Start
-        /// avec UseShellExecute = false, qui ne résout pas PATH par défaut).
-        /// Fallback : retourne <paramref name="exePath"/> tel quel.
+        /// Resolves an executable path. If <paramref name="exePath"/> is an
+        /// existing absolute path, returns it as-is. Otherwise, searches for
+        /// the name in the PATH environment variable (useful for spawning
+        /// Process.Start with UseShellExecute = false, which does not resolve
+        /// PATH by default). Fallback: returns <paramref name="exePath"/> as-is.
         /// </summary>
         public static string ResolveExe(string exePath)
         {
@@ -223,8 +223,8 @@ namespace OFK_GEX
     public static class GexLoader
     {
         /// <summary>
-        /// Charge un fichier full_levels_*.json et retourne (GexSnapshot, MetaSnapshot, ok).
-        /// symbol = "nq" ou "es" — détermine les suffixes de champ JSON.
+        /// Loads a full_levels_*.json file and returns (GexSnapshot, MetaSnapshot, ok).
+        /// symbol = "nq" or "es" — determines the JSON field suffixes.
         /// </summary>
         public static (GexSnapshot gex, MetaSnapshot meta, bool ok) Load(string jsonPath, string symbol)
         {
@@ -356,7 +356,7 @@ namespace OFK_GEX
             }
         }
 
-        // ── Replay intraday : listing + chargement de snapshots horodatés ─────
+        // ── Intraday replay: listing + loading timestamped snapshots ──────────
 
         public readonly struct SnapshotInfo
         {
@@ -366,10 +366,10 @@ namespace OFK_GEX
         }
 
         /// <summary>
-        /// Liste les snapshots intraday d'un symbole pour une date locale donnée.
-        /// Pattern attendu : {SYMBOL}_full_levels_{YYYYMMDD}_{HHMM}.json
-        /// Renvoie la liste triée par timestamp croissant (vide si dossier absent).
-        /// symbol = "NQ" ou "ES" (insensible à la casse, normalisé en majuscules).
+        /// Lists intraday snapshots for a symbol on a given local date.
+        /// Expected pattern: {SYMBOL}_full_levels_{YYYYMMDD}_{HHMM}.json
+        /// Returns the list sorted by ascending timestamp (empty if directory missing).
+        /// symbol = "NQ" or "ES" (case-insensitive, normalized to uppercase).
         /// </summary>
         public static System.Collections.Generic.List<SnapshotInfo> ListSnapshots(
             string intradayDir, string symbol, DateTime localDate)
@@ -402,14 +402,14 @@ namespace OFK_GEX
         }
 
         /// <summary>
-        /// Charge un snapshot précis (chemin déjà résolu via ListSnapshots).
-        /// symbol = "nq" ou "es" pour adapter les suffixes de champ JSON.
+        /// Loads a specific snapshot (path already resolved via ListSnapshots).
+        /// symbol = "nq" or "es" to adapt the JSON field suffixes.
         /// </summary>
         public static (GexSnapshot gex, MetaSnapshot meta, bool ok) LoadSnapshotPath(
             string snapshotPath, string symbol)
             => Load(snapshotPath, symbol);
 
-        // ── Helpers de parsing JSON manuel (rapide, sans dépendance externe) ──
+        // ── Manual JSON parsing helpers (fast, no external dependency) ────────
 
         public static double ParseDouble(string json, string key)
         {

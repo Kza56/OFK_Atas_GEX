@@ -1,27 +1,27 @@
 // ============================================================================
 //  OFK_ES_ContextScore.cs — ATAS
-//  Score directionnel contextuel scalping ES E-mini.
+//  Contextual directional score for ES E-mini scalping.
 //
-//  Score = -100 à +100 :
-//   +70 à +100 : BULLISH HIGH (très haute conviction long)
-//   +30 à +69  : BULLISH (modéré)
-//   -29 à +29  : NEUTRAL (stay flat)
-//   -69 à -30  : BEARISH (modéré)
-//   -100 à -70 : BEARISH HIGH (très haute conviction short)
+//  Score = -100 to +100:
+//   +70 to +100 : BULLISH HIGH (very high long conviction)
+//   +30 to +69  : BULLISH (moderate)
+//   -29 to +29  : NEUTRAL (stay flat)
+//   -69 to -30  : BEARISH (moderate)
+//   -100 to -70 : BEARISH HIGH (very high short conviction)
 //
-//  Composantes (gradient relatif au range PW-CW):
-//   - Position dans le range PW-CW (±30, gradient)
-//   - Distance au Gamma Flip (±15, gradient)
-//   - Régime gamma (zone) (±20)
-//   - DEX D+/D- proximité relative (±15, gradient 25% du range)
+//  Components (gradient relative to PW-CW range):
+//   - Position within PW-CW range (±30, gradient)
+//   - Distance to Gamma Flip (±15, gradient)
+//   - Gamma regime (zone) (±20)
+//   - DEX D+/D- relative proximity (±15, gradient 25% of range)
 //   - Skew 25D (±10) / Term backwardation (±5)
-//   - Pin 0DTE afternoon (±5, zone 10% du range)
+//   - 0DTE Pin afternoon (±5, zone 10% of range)
 //
-//  Filtres bloquants (force score=0): VIX extreme, macro blackout,
+//  Blocking filters (forces score=0): VIX extreme, macro blackout,
 //   macro <30min, data_quality=error
-//  Filtres atténuateurs (×0.5-0.7): VIX elevated, data partial, IVR>90
+//  Attenuating filters (×0.5-0.7): VIX elevated, data partial, IVR>90
 //
-//  Lit le même JSON que OFK_ES_GEX_Levels via GexLoader (shared).
+//  Reads the same JSON as OFK_ES_GEX_Levels via GexLoader (shared).
 // ============================================================================
 using System;
 using System.ComponentModel;
@@ -36,13 +36,13 @@ namespace OFK_GEX
 {
     [DisplayName("OFK ES Context Score")]
     [Category("OFK Suite")]
-    [Description("Score directionnel contextuel (GEX + VIX + macro). Lit full_levels_ES.json.")]
+    [Description("Contextual directional score (GEX + VIX + macro). Reads full_levels_ES.json.")]
     public class OFK_ES_ContextScore : Indicator
     {
         #region Source
 
         [Display(Name = "JSON Path", GroupName = "01.Source", Order = 1)]
-        public string JsonPath { get; set; } = @"C:\Users\steph\Documents\GitHub\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_ES.json";
+        public string JsonPath { get; set; } = @"C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_ES.json";
 
         [Display(Name = "Refresh (minutes)", GroupName = "01.Source", Order = 2)]
         [Range(1, 60)]
@@ -52,34 +52,34 @@ namespace OFK_GEX
 
         #region Score parameters
 
-        [Display(Name = "Filtres bloquants (VIX extr / macro / err)", GroupName = "02.Score params", Order = 4,
-                 Description = "Si activé, force le score à 0 dans les conditions critiques")]
+        [Display(Name = "Blocking filters (VIX extr / macro / err)", GroupName = "02.Score params", Order = 4,
+                 Description = "If enabled, forces the score to 0 under critical conditions")]
         public bool EnableBlockingFilters { get; set; } = true;
 
-        [Display(Name = "Afficher score en texte", GroupName = "02.Score params", Order = 5)]
+        [Display(Name = "Show score as text", GroupName = "02.Score params", Order = 5)]
         public bool ShowScoreText { get; set; } = true;
 
-        [Display(Name = "Taille texte score", GroupName = "02.Score params", Order = 6)]
+        [Display(Name = "Score text size", GroupName = "02.Score params", Order = 6)]
         [Range(10, 64)]
         public int ScoreFontSize { get; set; } = 24;
 
         #endregion
 
-        #region Couleurs
+        #region Colors
 
-        [Display(Name = "Bullish HIGH (≥70)", GroupName = "03.Couleurs", Order = 1)]
+        [Display(Name = "Bullish HIGH (≥70)", GroupName = "03.Colors", Order = 1)]
         public DrawingColor BullishStrongColor { get; set; } = DrawingColor.FromArgb(255, 0, 200, 80);
 
-        [Display(Name = "Bullish (30-69)", GroupName = "03.Couleurs", Order = 2)]
+        [Display(Name = "Bullish (30-69)", GroupName = "03.Colors", Order = 2)]
         public DrawingColor BullishMildColor { get; set; } = DrawingColor.FromArgb(255, 100, 200, 130);
 
-        [Display(Name = "Neutral (-29 à 29)", GroupName = "03.Couleurs", Order = 3)]
+        [Display(Name = "Neutral (-29 to 29)", GroupName = "03.Colors", Order = 3)]
         public DrawingColor NeutralColor { get; set; } = DrawingColor.FromArgb(255, 140, 140, 140);
 
-        [Display(Name = "Bearish (-69 à -30)", GroupName = "03.Couleurs", Order = 4)]
+        [Display(Name = "Bearish (-69 to -30)", GroupName = "03.Colors", Order = 4)]
         public DrawingColor BearishMildColor { get; set; } = DrawingColor.FromArgb(255, 230, 150, 60);
 
-        [Display(Name = "Bearish HIGH (≤-70)", GroupName = "03.Couleurs", Order = 5)]
+        [Display(Name = "Bearish HIGH (≤-70)", GroupName = "03.Colors", Order = 5)]
         public DrawingColor BearishStrongColor { get; set; } = DrawingColor.FromArgb(255, 230, 50, 50);
 
         #endregion
@@ -92,7 +92,7 @@ namespace OFK_GEX
         private DateTime _lastLoadTime = DateTime.MinValue;
         private string   _loadedDate   = "";
 
-        // Dernier score calculé (pour OnRender)
+        // Last computed score (for OnRender)
         private int    _lastScore = 0;
         private string _lastScoreReason = "";
         private string _lastScoreTag = "neutral";
@@ -109,7 +109,7 @@ namespace OFK_GEX
             EnableCustomDrawing = true;
             SubscribeToDrawingEvents(DrawingLayouts.Historical | DrawingLayouts.LatestBar | DrawingLayouts.Final);
 
-            // 5 séries histogramme (une par bucket de couleur), assignment exclusif
+            // 5 histogram series (one per color bucket), exclusive assignment
             DataSeries[0].Name = "Bullish HIGH";
             ((ValueDataSeries)DataSeries[0]).VisualType = VisualMode.Histogram;
             ((ValueDataSeries)DataSeries[0]).Color = ToMediaColor(BullishStrongColor);
@@ -155,7 +155,7 @@ namespace OFK_GEX
             bool elapsed   = RefreshMinutes > 0 && (DateTime.Now - _lastLoadTime).TotalMinutes >= RefreshMinutes;
             if (isLastBar && (newDay || elapsed)) LoadLevels();
 
-            // Le score n'est calculé que sur la barre live (pas d'historique JSON)
+            // Score is only computed on the live bar (no JSON history)
             if (!isLastBar) return;
             var candle = GetCandle(bar);
             if (candle == null) return;
@@ -165,7 +165,7 @@ namespace OFK_GEX
             _lastScoreReason = reason;
             _lastScoreTag = tag;
 
-            // Reset les 5 séries à 0 sur cette barre puis assigner à la bonne
+            // Reset the 5 series to 0 on this bar then assign to the correct one
             ((ValueDataSeries)DataSeries[0])[bar] = 0;
             ((ValueDataSeries)DataSeries[1])[bar] = 0;
             ((ValueDataSeries)DataSeries[2])[bar] = 0;
@@ -180,7 +180,7 @@ namespace OFK_GEX
         {
             var lv = _levels;
             var meta = _meta;
-            if (!lv.Loaded) return (0, "Pas de données", "DATA");
+            if (!lv.Loaded) return (0, "No data", "DATA");
 
             // BLOCKING FILTERS — checked first, before any scoring
             if (EnableBlockingFilters && meta.Loaded)
@@ -188,9 +188,9 @@ namespace OFK_GEX
                 if (meta.VixRegime == "extreme")
                     return (0, $"VIX EXTREME ({meta.Vix:F1}) — STOP", "BLOCKED");
                 if (meta.MacroInBlackout)
-                    return (0, "Macro blackout EN COURS", "BLOCKED");
+                    return (0, "Macro blackout IN PROGRESS", "BLOCKED");
                 if (meta.MacroMinutesToNext > 0 && meta.MacroMinutesToNext <= 30)
-                    return (0, $"{(string.IsNullOrEmpty(meta.MacroNextEventTitle) ? "Macro" : meta.MacroNextEventTitle)} dans {meta.MacroMinutesToNext}min", "BLOCKED");
+                    return (0, $"{(string.IsNullOrEmpty(meta.MacroNextEventTitle) ? "Macro" : meta.MacroNextEventTitle)} in {meta.MacroMinutesToNext}min", "BLOCKED");
                 if (meta.DataQuality == "error")
                     return (0, "Data ERROR", "BLOCKED");
             }
@@ -318,7 +318,7 @@ namespace OFK_GEX
                        : score > -70   ? "BEARISH"
                        :                 "BEARISH HIGH";
 
-            string reason = reasons.Count > 0 ? string.Join(" • ", reasons) : "neutre";
+            string reason = reasons.Count > 0 ? string.Join(" • ", reasons) : "neutral";
             return (score, reason, tag);
         }
 

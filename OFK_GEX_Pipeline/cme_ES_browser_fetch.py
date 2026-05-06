@@ -2,27 +2,27 @@
 """
 cme_ES_browser_fetch.py  —  Options Greeks Exposure fetcher ES E-mini S&P500 (CME via Playwright)
 
-Endpoints CME découverts via Network tab:
+CME endpoints discovered via the browser Network tab:
   1. /CmeWS/mvc/Volume/TradeDates?exchange=CBOT
   2. /CmeWS/mvc/Volume/Options/Expirations?productid=133&tradedate={date}
   3. /CmeWS/mvc/Volume/Options/Details?productid={pid}&tradedate={date}&expirationcode={code}&reporttype=F
   4. /CmeWS/mvc/Settlements/Options/Settlements/{pid}/OOF?...
 
-Niveaux calculés (inspirés SpotGamma):
+Computed levels (SpotGamma-inspired):
   GEX  = Gamma Exposure       → Σ OI × gamma × mult × S²  (pinning vs amplification)
-  VEX  = Vanna Exposure       → Σ OI × vanna × mult × S   (flux IV-driven)
-  CEX  = Charm Exposure       → Σ OI × charm × mult       (flux time-driven)
-  DEX  = Delta Exposure       → Σ OI × delta × mult × S   (directionnel)
+  VEX  = Vanna Exposure       → Σ OI × vanna × mult × S   (IV-driven flows)
+  CEX  = Charm Exposure       → Σ OI × charm × mult       (time-driven flows)
+  DEX  = Delta Exposure       → Σ OI × delta × mult × S   (directional)
 
-  Niveaux dérivés:
-  - Gamma Flip (Zero Gamma)  : GEX cumulé change de signe
-  - Volatility Trigger       : strike le plus proche du spot avec GEX > 0
-  - Call Wall / Put Wall     : strikes à GEX max positif / max négatif
-  - Risk Pivot               : premier strike sous spot où GEX devient très négatif
-  - Vanna Flip               : strike où VEX change de signe
-  - Charm Magnet             : strike avec |CEX| maximal (aimant de fin de session)
+  Derived levels:
+  - Gamma Flip (Zero Gamma)  : cumulative GEX changes sign
+  - Volatility Trigger       : nearest strike above spot with GEX > 0
+  - Call Wall / Put Wall     : strikes with max positive / max negative GEX
+  - Risk Pivot               : first strike below spot where GEX turns very negative
+  - Vanna Flip               : strike where VEX changes sign
+  - Charm Magnet             : strike with max |CEX| (end-of-session price magnet)
 
-IDs CME ES E-mini S&P 500:
+CME ES E-mini S&P 500 IDs:
   Futures (spot)  : 133
   Standard (Eur.) : 136
   EOM + American  : 138
@@ -31,7 +31,7 @@ IDs CME ES E-mini S&P 500:
   Wednesday       : 8227
   Thursday        : 10137
   Friday          : 2915
-  Multiplicateur  : $50/point
+  Multiplier      : $50/point
 
 Usage:
   python cme_ES_browser_fetch.py
@@ -57,7 +57,7 @@ CME_QUOTES_URL       = CME_BASE + "/markets/equities/sp/e-mini-sandp500.quotes.h
 CME_SETTLEMENTS_BASE = CME_BASE + "/markets/equities/sp/e-mini-sandp500.settlements.options.html"
 CME_VOLUME_BASE      = CME_BASE + "/markets/equities/sp/e-mini-sandp500.volume.options.html"
 
-# Pages settlements par type (dans l'ordre du menu CME)
+# Settlements pages by type (in CME menu order)
 # Standard=136, EOM+American=138, Mon=8292, Tue=10132, Wed=8227, Thu=10137, Fri=2915
 CME_SETTLEMENTS_PAGES = {
     136  : CME_SETTLEMENTS_BASE + "#optionProductId=136",
@@ -69,7 +69,7 @@ CME_SETTLEMENTS_PAGES = {
     2915 : CME_SETTLEMENTS_BASE + "#optionProductId=2915",
 }
 
-# Pages volume par PID
+# Volume pages by PID
 CME_VOLUME_PAGES = {
     136  : CME_VOLUME_BASE + "#optionProductId=136",
     138  : CME_VOLUME_BASE + "#optionProductId=138",
@@ -80,23 +80,23 @@ CME_VOLUME_PAGES = {
     2915 : CME_VOLUME_BASE + "#optionProductId=2915",
 }
 
-# PIDs weeklies enfants (week 2/3/4) — à compléter si CME en expose
-# Pour l'instant on suppose un seul PID par jour (à vérifier en prod)
+# Child weekly PIDs (week 2/3/4) — to be filled in if CME exposes them
+# For now we assume a single PID per day (to verify in prod)
 CME_SETTLEMENTS_PARENT = {
-    # Ajouter ici les PIDs week2/3/4 si découverts via Network tab
-    # ex: 2916: 2915,  # Friday week 2
+    # Add here the week2/3/4 PIDs if discovered via the Network tab
+    # e.g. 2916: 2915,  # Friday week 2
 }
 
-ES_FUTURES_ID  = 133   # ID futures ES pour le spot price
-ES_MULTIPLIER  = 50    # $50 par point ES
-MIN_OI         = 5     # OI minimum par strike pour inclure
+ES_FUTURES_ID  = 133   # ES futures ID for the spot price
+ES_MULTIPLIER  = 50    # $50 per ES point
+MIN_OI         = 5     # minimum OI per strike to include
 
-# ── Chemin de sortie JSON (centralisé dans config.py, override via ES_GEX_JSON env var) ──
+# ── JSON output path (centralized in config.py, override via ES_GEX_JSON env var) ──
 from config import ES_GEX_JSON as GEX_OUTPUT_PATH
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Black-Scholes Greeks (identique NQ)
+# Black-Scholes Greeks (identical to NQ)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _norm_pdf(x: float) -> float:
@@ -112,7 +112,7 @@ def _d1d2(S, K, T, r, sigma) -> Tuple[float, float]:
 
 def bs_greeks(S: float, K: float, T: float, r: float, sigma: float,
               is_call: bool) -> Dict[str, float]:
-    """Calcule delta, gamma, vanna, charm pour une option BS."""
+    """Computes delta, gamma, vanna, charm for a BS option."""
     if T <= 0 or sigma <= 0 or S <= 0 or K <= 0:
         return {'delta':0, 'gamma':0, 'vanna':0, 'charm':0}
     try:
@@ -133,7 +133,7 @@ def bs_greeks(S: float, K: float, T: float, r: float, sigma: float,
 
 def implied_vol(option_price: float, S: float, K: float, T: float,
                 r: float, is_call: bool) -> float:
-    """IV par bisection (60 itérations). Retourne 0.20 si non convergé."""
+    """IV via bisection (60 iterations). Returns 0.20 if not converged."""
     if option_price <= 0 or T <= 0:
         return 0.20
     try:
@@ -152,7 +152,7 @@ def implied_vol(option_price: float, S: float, K: float, T: float,
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Session Playwright
+# Playwright session
 # ═══════════════════════════════════════════════════════════════════════════════
 
 class CMEBrowserSession:
@@ -175,15 +175,15 @@ class CMEBrowserSession:
             viewport={"width": 1280, "height": 720},
         )
         self._page = ctx.new_page()
-        log.info("Initialisation navigateur CME ES...")
+        log.info("Initializing CME ES browser...")
         for attempt in range(3):
             try:
                 self._page.goto(CME_MAIN_PAGE, wait_until='domcontentloaded', timeout=30000)
                 time.sleep(4)
-                log.info("Navigateur CME ES prêt")
+                log.info("CME ES browser ready")
                 break
             except Exception as e:
-                log.warning(f"goto tentative {attempt+1}/3: {e}")
+                log.warning(f"goto attempt {attempt+1}/3: {e}")
                 time.sleep(2)
         return self
 
@@ -220,7 +220,7 @@ class CMEBrowserSession:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Fetchers CME
+# CME fetchers
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def get_latest_trade_date(session: CMEBrowserSession) -> str:
@@ -231,7 +231,7 @@ def get_latest_trade_date(session: CMEBrowserSession) -> str:
         if td:
             log.info(f"  Trade date: {td}")
             return td
-    # Fallback: dernier jour de bourse
+    # Fallback: last business day
     today = date.today()
     for delta in range(1, 5):
         d = today - timedelta(days=delta)
@@ -241,7 +241,7 @@ def get_latest_trade_date(session: CMEBrowserSession) -> str:
 
 
 def get_es_spot_price(session: CMEBrowserSession) -> float:
-    """Récupère le dernier prix du ES futures depuis CME."""
+    """Fetches the latest ES futures price from CME."""
     _t = int(time.time() * 1000)
     endpoints = [
         CME_BASE + f"/CmeWS/mvc/quotes/v2/{ES_FUTURES_ID}?isProtected&_t={_t}",
@@ -289,15 +289,15 @@ def get_es_spot_price(session: CMEBrowserSession) -> float:
                         if v and v not in ('-', '0', 'N/A', ''):
                             try:
                                 price = float(v)
-                                if 3000 < price < 10000:  # plage valide pour ES
-                                    log.info(f"  ✓ Spot ES: {price:.2f}  (champ={field})")
+                                if 3000 < price < 10000:  # valid ES range
+                                    log.info(f"  ✓ Spot ES: {price:.2f}  (field={field})")
                                     return price
                             except Exception:
                                 pass
             except Exception as e:
-                log.warning(f"  Erreur parse: {e}")
+                log.warning(f"  Parse error: {e}")
 
-    log.warning("  get_es_spot_price: aucun endpoint valide")
+    log.warning("  get_es_spot_price: no valid endpoint")
     return 0.0
 
 
@@ -306,7 +306,7 @@ def get_all_expirations(session: CMEBrowserSession, trade_date: str) -> List[Dic
             f"?productid={ES_FUTURES_ID}&tradedate={trade_date}&isProtected")
     data = session.fetch_json(url)
     if not data or not isinstance(data, list):
-        log.warning(f"  Expirations: réponse vide ou invalide")
+        log.warning(f"  Expirations: empty or invalid response")
         return []
     results = []
     for group in data:
@@ -327,7 +327,7 @@ def get_all_expirations(session: CMEBrowserSession, trade_date: str) -> List[Dic
                     'label'         : exp.get('label', ''),
                     'isWeekly'      : group.get('weekly', False),
                 })
-    log.info(f"  {len(results)} expirations ES")
+    log.info(f"  {len(results)} ES expirations")
     return results
 
 
@@ -337,7 +337,7 @@ def get_oi_by_strike(session: CMEBrowserSession, pid: int,
                      contract_id: str = '',
                      trade_date_fmt: str = '',
                      dte: int = None) -> Dict[float, Dict]:
-    """Récupère l'OI par strike via l'endpoint Settlements."""
+    """Fetches OI per strike via the Settlements endpoint."""
     ts  = int(time.time() * 1000)
     url = (f"{CME_BASE}/CmeWS/mvc/Settlements/Options/Settlements"
            f"/{pid}/OOF"
@@ -376,11 +376,11 @@ def get_oi_by_strike(session: CMEBrowserSession, pid: int,
     n = len(by_strike)
     log.info(f"    OI/settle [{pid}/{exp_code}] → {n} strikes")
 
-    # Retry avec date du jour pour les expirations imminentes (0DTE/1DTE)
+    # Retry with today's date for imminent expirations (0DTE/1DTE)
     if n == 0 and dte is not None and dte <= 2:
         today_fmt = date.today().strftime('%m/%d/%Y')
         if today_fmt != trade_date_fmt:
-            log.info(f"    [{pid}/{exp_code}] dte={dte} → retry avec date du jour {today_fmt}")
+            log.info(f"    [{pid}/{exp_code}] dte={dte} → retry with today's date {today_fmt}")
             url2 = (f"{CME_BASE}/CmeWS/mvc/Settlements/Options/Settlements"
                     f"/{pid}/OOF?strategy=DEFAULT&optionProductId={pid}"
                     f"&monthYear={contract_id}&optionExpiration={pid}-{exp_code}"
@@ -405,13 +405,13 @@ def get_oi_by_strike(session: CMEBrowserSession, pid: int,
                 if n > 0:
                     log.info(f"    [{pid}/{exp_code}] → {n} strikes (retry today)")
             except Exception as e:
-                log.debug(f"    retry today échoué: {e}")
+                log.debug(f"    retry today failed: {e}")
 
     return dict(by_strike)
 
 
 def _calc_dte(exp_code: str) -> int:
-    """DTE depuis code expiry ex: 'K26' → 3ème vendredi de mai 2026."""
+    """DTE from expiry code, e.g. 'K26' → 3rd Friday of May 2026."""
     month_map = {'F':1,'G':2,'H':3,'J':4,'K':5,'M':6,
                  'N':7,'Q':8,'U':9,'V':10,'X':11,'Z':12}
     try:
@@ -426,10 +426,10 @@ def _calc_dte(exp_code: str) -> int:
         return 30
 
 
-# Cache volume pages
+# Volume pages cache
 _volume_page_cache: Dict[int, bool] = {}
 
-# PIDs standard (settlements 24h/24, Volume/Details intraday) vs weeklies (Volume/Details only)
+# Standard PIDs (settlements 24/7, intraday Volume/Details) vs weeklies (Volume/Details only)
 STANDARD_PIDS = {136, 138}                              # European Standard + EOM American
 WEEKLY_PIDS   = {8292, 10132, 8227, 10137, 2915}        # Mon, Tue, Wed, Thu, Fri
 
@@ -439,12 +439,12 @@ def get_oi_standard_with_intraday(session: CMEBrowserSession, pid: int,
                                    contract_id: str, trade_date_fmt: str,
                                    dte: int, estimated_iv: float = 0.18) -> Dict[float, Dict]:
     """
-    STANDARD_PIDS (ex: 136, 138) : combine
-      - OI intraday via Volume/Options/Details?reporttype=F   (mis à jour pendant la session)
-      - Settle prices via Settlements/Options/Settlements/{pid}/OOF  (utilisés pour l'IV inversion)
+    STANDARD_PIDS (e.g. 136, 138): combines
+      - Intraday OI via Volume/Options/Details?reporttype=F   (updated during the session)
+      - Settle prices via Settlements/Options/Settlements/{pid}/OOF  (used for IV inversion)
 
-    Si Volume/Details est vide (marché fermé / off-hours), fallback total sur Settlements
-    (qui contient aussi l'OI EOD veille).
+    If Volume/Details is empty (market closed / off-hours), full fallback to Settlements
+    (which also contains the previous-day EOD OI).
     """
     intraday_oi = get_oi_volume_details(session, pid, trade_date, exp_code,
                                          estimated_iv=estimated_iv)
@@ -454,7 +454,7 @@ def get_oi_standard_with_intraday(session: CMEBrowserSession, pid: int,
                                     dte=dte)
 
     if not intraday_oi:
-        log.info(f"    [intraday→fallback] {pid}/{exp_code}: Volume/Details vide → Settlements seul")
+        log.info(f"    [intraday→fallback] {pid}/{exp_code}: Volume/Details empty → Settlements only")
         return settle_data
 
     merged: Dict[float, Dict] = {}
@@ -476,7 +476,7 @@ def get_oi_standard_with_intraday(session: CMEBrowserSession, pid: int,
 def get_oi_volume_details(session: CMEBrowserSession, pid: int,
                           trade_date: str, exp_code: str,
                           estimated_iv: float = 0.18) -> Dict[float, Dict]:
-    """Récupère l'OI par strike via Volume/Options/Details."""
+    """Fetches OI per strike via Volume/Options/Details."""
     def _f(v):
         try: return float(str(v).replace(',','').strip()) if v not in (None,'-','') else 0.0
         except Exception: return 0.0
@@ -485,13 +485,13 @@ def get_oi_volume_details(session: CMEBrowserSession, pid: int,
     volume_url = CME_VOLUME_PAGES.get(page_pid)
 
     if volume_url and page_pid not in _volume_page_cache:
-        log.info(f"    [Page volume] Navigation pid={page_pid}")
+        log.info(f"    [Volume page] Navigating pid={page_pid}")
         try:
             session._page.goto(volume_url, wait_until='domcontentloaded', timeout=20000)
             time.sleep(2)
             _volume_page_cache[page_pid] = True
         except Exception as e:
-            log.warning(f"    [Page volume] goto échoué: {e}")
+            log.warning(f"    [Volume page] goto failed: {e}")
 
     ts  = int(time.time() * 1000)
     url = (f"{CME_BASE}/CmeWS/mvc/Volume/Options/Details"
@@ -532,7 +532,7 @@ def get_oi_volume_details(session: CMEBrowserSession, pid: int,
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Calcul des expositions Greeks
+# Greek exposure computation
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def compute_greek_exposures(
@@ -542,7 +542,7 @@ def compute_greek_exposures(
         spot: float,
         r: float = 0.045,
 ) -> Dict[float, Dict]:
-    """Pour chaque strike: calcule GEX, VEX, CEX, DEX."""
+    """For each strike: computes GEX, VEX, CEX, DEX."""
     T = max(dte / 365.0, 0.5 / 365)
     S = spot if spot > 0 else 5000.0
     exposures = {}
@@ -582,7 +582,7 @@ def compute_greek_exposures(
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Agrégation des niveaux
+# Level aggregation
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def _compute_atm_iv(exposures: Dict[float, Dict], spot: float) -> float:
@@ -655,8 +655,8 @@ def _compute_skew_25d(exposures: Dict[float, Dict], target_delta: float = 0.25,
              f"  →  skew={skew*100:+.2f} vp")
 
     if c_miss > max_delta_miss or p_miss > max_delta_miss:
-        log.warning(f"    Skew 25Δ: delta miss trop grand (call miss={c_miss:.3f}, put miss={p_miss:.3f})"
-                    f" → skew ignoré")
+        log.warning(f"    Skew 25Δ: delta miss too large (call miss={c_miss:.3f}, put miss={p_miss:.3f})"
+                    f" → skew ignored")
         return 0.0
 
     return skew
@@ -665,7 +665,7 @@ def _compute_skew_25d(exposures: Dict[float, Dict], target_delta: float = 0.25,
 def aggregate_levels(all_exposures: Dict[float, Dict], spot: float,
                      iv_by_dte: Optional[Dict[int, float]] = None,
                      skew_by_dte: Optional[Dict[int, float]] = None) -> Dict:
-    """Agrège toutes les expirations et calcule les niveaux dérivés.
+    """Aggregates all expirations and computes the derived levels.
 
     iv_by_dte   : optional dict DTE -> ATM IV (front-month → IVx).
     skew_by_dte : optional dict DTE -> 25Δ skew (front-month → headline skew).
@@ -683,13 +683,13 @@ def aggregate_levels(all_exposures: Dict[float, Dict], spot: float,
     if not strikes:
         return {}
 
-    # Totaux
+    # Totals
     total_gex = sum(combined[k]['gex'] for k in strikes)
     total_vex = sum(combined[k]['vex'] for k in strikes)
     total_cex = sum(combined[k]['cex'] for k in strikes)
     total_dex = sum(combined[k]['dex'] for k in strikes)
 
-    # Gamma Flip — GEX cumulé change de signe
+    # Gamma Flip — cumulative GEX changes sign
     gamma_flip = spot
     cumulative = 0.0
     for k in strikes:
@@ -699,19 +699,19 @@ def aggregate_levels(all_exposures: Dict[float, Dict], spot: float,
             gamma_flip = k
             break
 
-    # Vol Trigger — strike le plus proche du spot avec GEX > 0
+    # Vol Trigger — strike closest to spot with GEX > 0
     vol_trigger = spot
     above_spot = [k for k in strikes if k >= spot and combined[k]['gex'] > 0]
     if above_spot:
         vol_trigger = min(above_spot)
 
-    # Call Wall — GEX max positif
+    # Call Wall — max positive GEX
     call_wall = max(strikes, key=lambda k: combined[k]['gex'])
 
-    # Put Wall — GEX max négatif
+    # Put Wall — max negative GEX
     put_wall = min(strikes, key=lambda k: combined[k]['gex'])
 
-    # Risk Pivot — premier strike sous spot avec GEX très négatif
+    # Risk Pivot — first strike below spot with very negative GEX
     below_spot = [k for k in strikes if k < spot]
     risk_pivot = spot
     if below_spot:
@@ -719,7 +719,7 @@ def aggregate_levels(all_exposures: Dict[float, Dict], spot: float,
         very_neg    = [k for k in below_spot if combined[k]['gex'] < -gex_mean * 0.5]
         risk_pivot  = max(very_neg) if very_neg else min(below_spot, key=lambda k: combined[k]['gex'])
 
-    # Vanna Flip — VEX change de signe
+    # Vanna Flip — VEX changes sign
     vanna_flip = spot
     cum_vex    = 0.0
     for k in strikes:
@@ -729,7 +729,7 @@ def aggregate_levels(all_exposures: Dict[float, Dict], spot: float,
             vanna_flip = k
             break
 
-    # Charm Magnet — |CEX| maximal
+    # Charm Magnet — max |CEX|
     charm_magnet = max(strikes, key=lambda k: abs(combined[k]['cex']))
 
     # ── IVx (front-month ATM IV) ────────────────────────────────────────
@@ -776,11 +776,11 @@ def aggregate_levels(all_exposures: Dict[float, Dict], spot: float,
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# Fetch principal
+# Main fetch
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def fetch_gex_levels(manual_spot: float = 0, headless: bool = False) -> Dict:
-    """Fetch complet : trade date → expirations → OI/settle → Greeks → niveaux."""
+    """Full fetch: trade date → expirations → OI/settle → Greeks → levels."""
     with CMEBrowserSession(headless=headless) as session:
 
         trade_date = get_latest_trade_date(session)
@@ -789,13 +789,13 @@ def fetch_gex_levels(manual_spot: float = 0, headless: bool = False) -> Dict:
 
         spot = manual_spot if manual_spot > 0 else get_es_spot_price(session)
         if spot <= 0:
-            log.error("Impossible de récupérer le spot ES — utilisez --spot XXXX")
+            log.error("Cannot fetch ES spot — use --spot XXXX")
             return {}
         log.info(f"Spot ES: {spot:.2f}")
 
         expirations = get_all_expirations(session, trade_date)
         if not expirations:
-            log.error("Aucune expiration trouvée")
+            log.error("No expiration found")
             return {}
 
         all_exposures: Dict[float, Dict] = {}
@@ -809,18 +809,18 @@ def fetch_gex_levels(manual_spot: float = 0, headless: bool = False) -> Dict:
             ec  = exp['expirationCode']
             dte = _calc_dte(ec)
 
-            log.info(f"  Traitement {exp['label']}  pid={pid}  exp={ec}  dte={dte}")
+            log.info(f"  Processing {exp['label']}  pid={pid}  exp={ec}  dte={dte}")
 
             if pid in WEEKLY_PIDS:
-                # Weeklies : OI depuis Volume/Details (pendant marché)
-                # settle prices absents → IV estimée (ATM ~18%)
+                # Weeklies: OI from Volume/Details (during market hours)
+                # settle prices absent → IV estimated (ATM ~18%)
                 oi_data = get_oi_volume_details(
                     session, pid, trade_date, ec,
                     estimated_iv=0.18,
                 )
             elif pid in STANDARD_PIDS:
-                # STANDARD : merge Volume/Details (OI intraday) + Settlements (settle prices)
-                # Fallback automatique sur Settlements seul si off-hours
+                # STANDARD: merge Volume/Details (intraday OI) + Settlements (settle prices)
+                # Automatic fallback to Settlements alone if off-hours
                 oi_data = get_oi_standard_with_intraday(
                     session, pid, trade_date, ec,
                     contract_id=f"ES{ec}",
@@ -838,13 +838,13 @@ def fetch_gex_levels(manual_spot: float = 0, headless: bool = False) -> Dict:
                 )
 
             if not oi_data:
-                log.info(f"  {pid}/{ec} → vide, skip")
+                log.info(f"  {pid}/{ec} → empty, skip")
                 continue
 
-            settle_data = oi_data  # settlements inclus dans la même réponse (ou fallback)
+            settle_data = oi_data  # settlements included in the same response (or fallback)
             exposures   = compute_greek_exposures(oi_data, settle_data, dte, spot)
 
-            # ATM IV + Skew 25Δ pour cette expiration
+            # ATM IV + 25Δ skew for this expiration
             if dte > 0 and exposures:
                 atm_iv = _compute_atm_iv(exposures, spot)
                 if atm_iv > 0:
@@ -859,10 +859,10 @@ def fetch_gex_levels(manual_spot: float = 0, headless: bool = False) -> Dict:
                 for key in ('gex','vex','cex','dex','c_oi','p_oi'):
                     all_exposures[K][key] += exp_data[key]
 
-            log.info(f"  {pid}/{ec} → {len(exposures)} strikes avec Greeks")
+            log.info(f"  {pid}/{ec} → {len(exposures)} strikes with Greeks")
 
         if not all_exposures:
-            log.error("Aucune exposition calculée")
+            log.error("No exposure computed")
             return {}
 
         levels = aggregate_levels(all_exposures, spot,
@@ -870,10 +870,10 @@ def fetch_gex_levels(manual_spot: float = 0, headless: bool = False) -> Dict:
         levels['spot']       = spot
         levels['trade_date'] = trade_date
 
-        # Sauvegarder le JSON
+        # Save the JSON
         GEX_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
         GEX_OUTPUT_PATH.write_text(json.dumps(levels, indent=2))
-        log.info(f"JSON sauvegardé → {GEX_OUTPUT_PATH}")
+        log.info(f"JSON saved → {GEX_OUTPUT_PATH}")
 
         log.info(
             f"ES GEX: flip={levels['gamma_flip']:.0f}  "
@@ -896,21 +896,21 @@ def main():
 
     parser = argparse.ArgumentParser(description="CME ES Options Greeks Fetcher")
     parser.add_argument('--spot',        type=float, default=0,
-                        help="Prix spot ES (0=auto depuis CME quotes)")
+                        help="ES spot price (0=auto from CME quotes)")
     parser.add_argument('--test-expiry', action='store_true',
-                        help="Tester la liste des expirations uniquement")
+                        help="Test the expirations list only")
     parser.add_argument('--test-quotes', action='store_true',
-                        help="Tester uniquement la récupération du spot")
+                        help="Test the spot fetch only")
     args = parser.parse_args()
 
-    headless = False  # Toujours visible — Akamai bloque le headless Chromium
+    headless = False  # Always visible — Akamai blocks headless Chromium
     print(f"=== CME ES Options Greeks Fetcher ({'visible' if not headless else 'headless'}) ===")
-    print(f"  Spot: {'auto (CME quotes)' if args.spot==0 else f'{args.spot:.2f} (manuel)'}")
+    print(f"  Spot: {'auto (CME quotes)' if args.spot==0 else f'{args.spot:.2f} (manual)'}")
 
     if args.test_quotes:
         with CMEBrowserSession(headless=headless) as session:
             price = get_es_spot_price(session)
-            print(f"\n  ES Spot: {price:.2f}" if price > 0 else "\n  ECHEC: aucun prix récupéré")
+            print(f"\n  ES Spot: {price:.2f}" if price > 0 else "\n  FAILED: no price retrieved")
         return
 
     if args.test_expiry:
@@ -934,12 +934,12 @@ def main():
     lv   = fetch_gex_levels(args.spot, headless=headless)
     spot = lv.get('spot', args.spot)
     if lv:
-        print(f"\n=== Niveaux Options Greeks ES @ {spot:.0f} ===")
+        print(f"\n=== ES Options Greeks Levels @ {spot:.0f} ===")
         print('-' * 50)
-        print(f"  GEX Total      : {lv['total_gex']:+.3e}  ({'POSITIF pinning' if lv['gex_regime']==1 else 'NEGATIF amplification'})")
+        print(f"  GEX Total      : {lv['total_gex']:+.3e}  ({'POSITIVE pinning' if lv['gex_regime']==1 else 'NEGATIVE amplification'})")
         print(f"  VEX Total      : {lv['total_vex']:+.3e}  ({'IV down = rally' if lv['total_vex']>0 else 'IV up = sell-off'})")
         print(f"  CEX Total      : {lv['total_cex']:+.3e}")
-        print(f"  DEX Total      : {lv['total_dex']:+.3e}  ({'haussier' if lv['total_dex']>0 else 'baissier'})")
+        print(f"  DEX Total      : {lv['total_dex']:+.3e}  ({'bullish' if lv['total_dex']>0 else 'bearish'})")
         print('-' * 50)
         print(f"  Gamma Flip     : {lv['gamma_flip']:.0f}  (spot={spot:.0f}, diff={spot-lv['gamma_flip']:+.0f})")
         print(f"  Vol Trigger    : {lv['vol_trigger']:.0f}")
@@ -952,7 +952,7 @@ def main():
         print(f"  Trade Date     : {lv['trade_date']}")
         print(f"  JSON → {GEX_OUTPUT_PATH}")
     else:
-        print("Echec")
+        print("Failed")
         sys.exit(1)
 
 

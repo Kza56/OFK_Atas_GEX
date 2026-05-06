@@ -1,20 +1,20 @@
 """
-logging_setup.py — Logging fichier rotaté pour le pipeline GEX.
+logging_setup.py — Rotated file logging for the GEX pipeline.
 
-Console (stderr) + fichier rotaté `data/logs/pipeline.log` :
-- 10 MB max par fichier
-- 5 backups conservés (pipeline.log.1 à .5)
-- Format détaillé (timestamp, niveau, module, message)
+Console (stderr) + rotated file `data/logs/pipeline.log`:
+- 10 MB max per file
+- 5 backups kept (pipeline.log.1 to .5)
+- Detailed format (timestamp, level, module, message)
 
-Usage :
+Usage:
   from logging_setup import setup_logging
-  setup_logging()  # une fois au début du script
+  setup_logging()  # once at the start of the script
   log = logging.getLogger(__name__)
   log.info("...")
 
-Override env :
-  GEX_LOG_LEVEL : DEBUG|INFO|WARNING|ERROR (défaut INFO)
-  GEX_LOG_FILE  : chemin override pipeline.log
+Env overrides:
+  GEX_LOG_LEVEL : DEBUG|INFO|WARNING|ERROR (default INFO)
+  GEX_LOG_FILE  : override path for pipeline.log
 """
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ _INITIALIZED = False
 
 
 def setup_logging(level: str | None = None, log_file: Path | None = None) -> None:
-    """Configure root logger : console + RotatingFileHandler. Idempotent."""
+    """Configure root logger: console + RotatingFileHandler. Idempotent."""
     global _INITIALIZED
     if _INITIALIZED:
         return
@@ -35,7 +35,7 @@ def setup_logging(level: str | None = None, log_file: Path | None = None) -> Non
     level_str = (level or os.environ.get("GEX_LOG_LEVEL", "INFO")).upper()
     log_level = getattr(logging, level_str, logging.INFO)
 
-    # Path par défaut : DATA_DIR/logs/pipeline.log
+    # Default path: DATA_DIR/logs/pipeline.log
     if log_file is None:
         log_env = os.environ.get("GEX_LOG_FILE")
         if log_env:
@@ -51,7 +51,7 @@ def setup_logging(level: str | None = None, log_file: Path | None = None) -> Non
 
     root = logging.getLogger()
     root.setLevel(log_level)
-    # Évite doublons si setup_logging appelée plusieurs fois
+    # Avoid duplicates if setup_logging is called multiple times
     for h in list(root.handlers):
         root.removeHandler(h)
 
@@ -61,7 +61,7 @@ def setup_logging(level: str | None = None, log_file: Path | None = None) -> Non
     ch.setFormatter(logging.Formatter(fmt, datefmt=datefmt))
     root.addHandler(ch)
 
-    # Fichier rotaté : 10 MB, 5 backups
+    # Rotated file: 10 MB, 5 backups
     fh = RotatingFileHandler(
         str(log_file),
         maxBytes=10 * 1024 * 1024,
@@ -74,5 +74,5 @@ def setup_logging(level: str | None = None, log_file: Path | None = None) -> Non
 
     _INITIALIZED = True
     logging.getLogger(__name__).info(
-        f"logging initialisé (level={level_str}, file={log_file})"
+        f"logging initialized (level={level_str}, file={log_file})"
     )

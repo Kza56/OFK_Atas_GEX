@@ -1,16 +1,16 @@
 """
-vix_fetcher.py — VIX + VIX9D fetcher pour contextualiser le régime de volatilité.
+vix_fetcher.py — VIX + VIX9D fetcher to contextualize the volatility regime.
 
-Source : yfinance (^VIX, ^VIX9D). Gratuit, ~15 min delayed mais OK pour scoring de régime.
+Source: yfinance (^VIX, ^VIX9D). Free, ~15 min delayed but OK for regime scoring.
 
-API :
-- fetch_vix() -> dict avec :
+API:
+- fetch_vix() -> dict with:
     vix             : VIX spot
     vix9d           : VIX9D spot
     vix_regime      : "low" (<14) | "normal" (14-20) | "elevated" (20-28) | "extreme" (>28)
     vix_term        : "backwardation" (VIX9D > VIX +0.5) | "flat" | "contango"
     vix_term_slope  : VIX9D - VIX
-    vix_dod_change  : variation jour vs veille (en points VIX, signé)
+    vix_dod_change  : day-vs-prior-day change (in VIX points, signed)
 """
 
 from __future__ import annotations
@@ -41,23 +41,23 @@ def _classify_term(vix: float, vix9d: float) -> str:
 
 
 def fetch_vix() -> Dict:
-    """Récupère VIX + VIX9D + métriques dérivées. Renvoie {} en cas d'échec."""
+    """Fetch VIX + VIX9D + derived metrics. Returns {} on failure."""
     try:
         import yfinance as yf
     except ImportError:
-        log.warning("yfinance absent — pip install yfinance")
+        log.warning("yfinance missing — pip install yfinance")
         return {}
 
     try:
-        # period 5d pour avoir une close veille pour DoD change
+        # period 5d to get a previous-day close for DoD change
         vix_hist   = yf.Ticker("^VIX").history(period="5d", interval="1d")
         vix9d_hist = yf.Ticker("^VIX9D").history(period="5d", interval="1d")
     except Exception as e:
-        log.warning(f"VIX yfinance échec: {e}")
+        log.warning(f"VIX yfinance failed: {e}")
         return {}
 
     if vix_hist.empty:
-        log.warning("VIX history vide")
+        log.warning("VIX history empty")
         return {}
 
     vix_last  = float(vix_hist["Close"].iloc[-1])
@@ -78,9 +78,9 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(message)s")
     data = fetch_vix()
     if not data:
-        print("ECHEC fetch VIX")
+        print("FETCH VIX FAILED")
     else:
         print(f"VIX        : {data['vix']:.2f}  (DoD {data['vix_dod_change']:+.2f})")
         print(f"VIX9D      : {data['vix9d']:.2f}")
-        print(f"Régime     : {data['vix_regime']}")
+        print(f"Regime     : {data['vix_regime']}")
         print(f"Term       : {data['vix_term']}  (slope {data['vix_term_slope']:+.2f})")
