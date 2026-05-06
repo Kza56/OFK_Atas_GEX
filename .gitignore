@@ -9,9 +9,17 @@ __pycache__/
 *.pyd
 
 # Pipeline runtime data (large, machine-specific)
+OFK_GEX_Pipeline/data/*.json
+OFK_GEX_Pipeline/data/*.pdf
+OFK_GEX_Pipeline/data/*.txt
 OFK_GEX_Pipeline/data/history/
 OFK_GEX_Pipeline/data/backups/
+OFK_GEX_Pipeline/data/logs/
 OFK_GEX_Pipeline/logs/
+
+# But keep the samples folder (they're committed examples)
+!OFK_GEX_Pipeline/data/samples/
+!OFK_GEX_Pipeline/data/samples/**
 
 # IDE / OS
 .vs/
