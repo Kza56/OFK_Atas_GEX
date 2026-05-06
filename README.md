@@ -73,9 +73,6 @@ The bottom of the panel has four actions that run the Python pipeline directly f
 
 `OFK NQ Context Score` (or its ES counterpart) renders in a sub-pane below the chart. It collapses the entire dealer positioning picture into a single number between **−100 and +100** and explains *why* it landed there.
 
-<p align="center">
-  <img src="docs/images/context_score.png" alt="OFK Context Score sub-pane" width="700">
-</p>
 
 #### How to read it
 
