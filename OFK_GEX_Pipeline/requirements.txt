@@ -1,0 +1,7 @@
+playwright>=1.40
+requests>=2.31
+reportlab>=4.0
+pandas-market-calendars>=4.4
+yfinance>=0.2.40
+pytz>=2024.1
+pytest>=8.0

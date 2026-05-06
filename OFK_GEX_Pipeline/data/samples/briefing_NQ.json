@@ -1,0 +1,91 @@
+{
+  "date": "2026-05-01",
+  "spot_nq": 27617.25,
+  "trade_date": "20260430",
+  "heure_generation": "02:10 ET",
+  "regime": {
+    "gex_label": "positif",
+    "total_gex_B": 27.63,
+    "total_vex_B": 12.64,
+    "implication_vol": "Volatilité comprimée, dealers vendent les rallyes et achètent les replis, pinning probable tant que le spot reste au-dessus du gamma flip"
+  },
+  "biais": {
+    "direction": "neutre",
+    "conviction": "modérée",
+    "raison": "Spot collé au gamma flip 27617 : équilibre fragile en régime GEX positif, VEX positif soutient un biais haussier mécanique si IV baisse, mais PCR 1.545 indique un positionnement institutionnel défensif"
+  },
+  "niveaux": [
+    {
+      "type": "gamma_flip",
+      "prix_nq_approx": 27617,
+      "distance_spot_pct": 0.0,
+      "comportement_dealers": "Bascule de régime : au-dessus pinning, en-dessous amplification baissière"
+    },
+    {
+      "type": "vol_trigger",
+      "prix_nq_approx": 27700,
+      "distance_spot_pct": 0.3,
+      "comportement_dealers": "Premier seuil de vente des dealers, plafond intraday probable"
+    },
+    {
+      "type": "call_wall",
+      "prix_nq_approx": 28500,
+      "distance_spot_pct": 3.2,
+      "comportement_dealers": "Mur de gamma call majeur, dealers vendent agressivement, plafond structurel"
+    },
+    {
+      "type": "put_wall",
+      "prix_nq_approx": 25000,
+      "distance_spot_pct": -9.48,
+      "comportement_dealers": "Plancher de gamma put avec GEX -1.55B, support structurel hors de portée RTH"
+    },
+    {
+      "type": "risk_pivot",
+      "prix_nq_approx": 25000,
+      "distance_spot_pct": -9.48,
+      "comportement_dealers": "Trapdoor : sous ce niveau accélération baissière mécanique"
+    },
+    {
+      "type": "vanna_flip",
+      "prix_nq_approx": 28500,
+      "distance_spot_pct": 3.2,
+      "comportement_dealers": "Au-dessus la sensibilité vanna s'inverse, perte du soutien IV"
+    },
+    {
+      "type": "charm_magnet",
+      "prix_nq_approx": 28500,
+      "distance_spot_pct": 3.2,
+      "comportement_dealers": "Aimant 0DTE de fin de session aligné sur le call wall, hors de portée immédiate"
+    },
+    {
+      "type": "max_pain",
+      "prix_nq_approx": 26425,
+      "distance_spot_pct": -4.32,
+      "comportement_dealers": "Point de douleur maximale des options, gravité baissière à moyen terme"
+    },
+    {
+      "type": "expected_move_high",
+      "prix_nq_approx": 27897,
+      "distance_spot_pct": 1.01,
+      "comportement_dealers": "Borne haute de la range implicite QQQ convertie, résistance probable"
+    },
+    {
+      "type": "expected_move_low",
+      "prix_nq_approx": 27337,
+      "distance_spot_pct": -1.01,
+      "comportement_dealers": "Borne basse de la range implicite QQQ convertie, support probable"
+    }
+  ],
+  "plan_rth": {
+    "zone_achat": 27337,
+    "zone_vente": 27897,
+    "invalidation_haussiere": 27950,
+    "invalidation_baissiere": 27600
+  },
+  "alertes_risque": [
+    "Spot exactement au gamma flip 27617 : cassure sous ce niveau bascule en GEX négatif et expose à une amplification baissière vers max pain 26425",
+    "PCR 1.545 très put-heavy signale un hedging défensif institutionnel, prudence sur les longs agressifs",
+    "Expected Move étroit ±280 pts en régime de pinning : sorties de range 27337/27897 souvent piégées par les dealers"
+  ],
+  "resume_une_ligne": "Régime GEX positif au gamma flip : scalp range 27337–27897 en fade des extrêmes, basculement baissier sous 27600 vers 27337 puis 26425"
+}

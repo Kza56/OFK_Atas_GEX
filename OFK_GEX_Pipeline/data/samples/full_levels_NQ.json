@@ -1,0 +1,103 @@
+{
+  "generated_at": "2026-05-01T06:10:58.239691+00:00",
+  "trade_date": "20260430",
+  "spot_nq": 27617.25,
+  "spot_qqq": 647.9701,
+  "qqq_nq_ratio": 42.6212,
+  "gamma_flip": 27617.25,
+  "vol_trigger": 27700.0,
+  "call_wall": 28500.0,
+  "put_wall": 25000.0,
+  "risk_pivot": 25000.0,
+  "vanna_flip": 28500.0,
+  "charm_magnet": 28500.0,
+  "total_gex": 27634523641.313442,
+  "total_vex": 12635565080.046053,
+  "total_cex": 76856.07511609604,
+  "total_dex": 5565539078.757091,
+  "gex_regime": 1,
+  "vex_regime": 1,
+  "call_wall_gex": 1023951922.0,
+  "put_wall_gex": -1552134849.0,
+  "max_pain_qqq": 620.0,
+  "max_pain_nq": 26425,
+  "expected_move_qqq": 6.57,
+  "expected_move_nq": 280,
+  "range_bas_qqq": 641.4,
+  "range_haut_qqq": 654.54,
+  "range_bas_nq": 27337,
+  "range_haut_nq": 27897,
+  "pcr": 1.545,
+  "top_oi_strikes": [
+    {
+      "strike_qqq": 600.0,
+      "strike_nq": 25573,
+      "call_oi": 115656.0,
+      "put_oi": 292117.0,
+      "total_oi": 407773.0
+    },
+    {
+      "strike_qqq": 570.0,
+      "strike_nq": 24294,
+      "call_oi": 31695.0,
+      "put_oi": 293684.0,
+      "total_oi": 325379.0
+    },
+    {
+      "strike_qqq": 590.0,
+      "strike_nq": 25146,
+      "call_oi": 45470.0,
+      "put_oi": 228661.0,
+      "total_oi": 274131.0
+    },
+    {
+      "strike_qqq": 580.0,
+      "strike_nq": 24720,
+      "call_oi": 46414.0,
+      "put_oi": 218941.0,
+      "total_oi": 265355.0
+    },
+    {
+      "strike_qqq": 550.0,
+      "strike_nq": 23442,
+      "call_oi": 22750.0,
+      "put_oi": 223832.0,
+      "total_oi": 246582.0
+    },
+    {
+      "strike_qqq": 630.0,
+      "strike_nq": 26851,
+      "call_oi": 126320.0,
+      "put_oi": 103813.0,
+      "total_oi": 230133.0
+    },
+    {
+      "strike_qqq": 540.0,
+      "strike_nq": 23015,
+      "call_oi": 17360.0,
+      "put_oi": 212567.0,
+      "total_oi": 229927.0
+    },
+    {
+      "strike_qqq": 500.0,
+      "strike_nq": 21311,
+      "call_oi": 16296.0,
+      "put_oi": 212730.0,
+      "total_oi": 229026.0
+    },
+    {
+      "strike_qqq": 610.0,
+      "strike_nq": 25999,
+      "call_oi": 94109.0,
+      "put_oi": 133212.0,
+      "total_oi": 227321.0
+    },
+    {
+      "strike_qqq": 640.0,
+      "strike_nq": 27278,
+      "call_oi": 129286.0,
+      "put_oi": 93335.0,
+      "total_oi": 222621.0
+    }
+  ]
+}
