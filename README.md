@@ -124,7 +124,7 @@ python run_intraday_refresh.py NQ --loop --interval 300
 
 - **[OFK_ATAS/README.md](OFK_ATAS/README.md)** — ATAS indicators reference (and how to build from source)
 - **[OFK_GEX_Pipeline/README.md](OFK_GEX_Pipeline/README.md)** — Python pipeline reference
-- **[OFK_GEX_Pipeline/GUIDE_GEX_LEVELS.md](OFK_GEX_Pipeline/GUIDE_GEX_LEVELS.md)** — Plain-English guide to reading the levels (the most important doc for traders)
+- **[OFK_GEX_Pipeline/GUIDE_GEX_LEVELS.md](OFK_GEX_Pipeline/GUIDE_GEX_LEVELS.md)** — Trader's guide to reading the levels (the most important doc for traders)
 - **[docs/integration_handoff/](docs/integration_handoff/)** — Integration contract for external consumers (7 documents)
 
 ## Requirements
