@@ -1,4 +1,4 @@
-﻿# OFK_Atas_GEX
+# OFK_Atas_GEX
 
 ATAS indicators and Python pipeline for trading the E-mini Nasdaq-100 (NQ) and E-mini S&P 500 (ES) futures using options-derived levels (GEX, DEX, walls, gamma flip, pin strikes) and AI-generated daily briefings.
 
@@ -14,20 +14,20 @@ ATAS indicators and Python pipeline for trading the E-mini Nasdaq-100 (NQ) and E
 The ATAS indicator default settings are pre-configured for this location. Installing elsewhere requires manual editing of indicator parameters in ATAS.
 
 ```powershell
-# 1. Build the indicators
-cd C:\OFK_Atas_GEX\OFK_ATAS
-dotnet build OFK_Atas_GEX.csproj -c Release
+# 1. Copy the precompiled DLL to ATAS
+Copy-Item "C:\OFK_Atas_GEX\dist\OFK_Atas_GEX.dll" "$env:APPDATA\ATAS\Indicators\" -Force
 
-# 2. Copy the DLL to ATAS
-Copy-Item "bin\Release\net10.0-windows\OFK_Atas_GEX.dll" "$env:APPDATA\ATAS\Indicators\" -Force
-
-# 3. Install Python dependencies
+# 2. Install Python dependencies
 cd C:\OFK_Atas_GEX\OFK_GEX_Pipeline
 pip install -r requirements.txt
 playwright install chromium
 
-# 4. Restart ATAS — indicators appear under "OFK Suite"
+# 3. Restart ATAS — indicators appear under "OFK Suite"
 ```
+
+The precompiled DLL targets .NET 10 / Windows. No build tools required.
+
+> **Building from source** (only if you modify the C# code): see [OFK_ATAS/README.md](OFK_ATAS/README.md).
 
 ## Daily usage
 
@@ -46,7 +46,7 @@ The ATAS indicators auto-reload the JSON every 5 minutes by default.
 
 ## Documentation
 
-- **[OFK_ATAS/README.md](OFK_ATAS/README.md)** — ATAS indicators reference
+- **[OFK_ATAS/README.md](OFK_ATAS/README.md)** — ATAS indicators reference (and how to build from source)
 - **[OFK_GEX_Pipeline/README.md](OFK_GEX_Pipeline/README.md)** — Python pipeline reference
 - **[OFK_GEX_Pipeline/GUIDE_GEX_LEVELS.md](OFK_GEX_Pipeline/GUIDE_GEX_LEVELS.md)** — Plain-English guide to reading the levels (the most important doc for traders)
 - **[docs/integration_handoff/](docs/integration_handoff/)** — Integration contract for external consumers (7 documents)
@@ -54,7 +54,7 @@ The ATAS indicators auto-reload the JSON every 5 minutes by default.
 ## Requirements
 
 - Windows 10 / 11
-- ATAS 1.5+ with .NET 10 SDK installed
+- ATAS 1.5+
 - Python 3.10+
 - Claude Code CLI (`npm i -g @anthropic-ai/claude-code`) for AI briefings
 
