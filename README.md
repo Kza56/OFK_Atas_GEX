@@ -143,4 +143,6 @@ python run_intraday_refresh.py NQ --loop --interval 300
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+PolyForm Noncommercial 1.0.0 — see [LICENSE](LICENSE).
+
+This software is free for personal, educational, and non-commercial use. Commercial use requires prior written permission from the author. Contact via GitHub issues.
