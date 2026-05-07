@@ -10,24 +10,31 @@ ATAS indicators and Python pipeline for trading the E-mini Nasdaq-100 (NQ) and E
 
 ## Quick install
 
-**Required path**: extract the repository into `C:\OFK_Atas_GEX\` (root of the C: drive).
+**Required path**: the repository must end up at `C:\OFK_Atas_GEX\` (root of the C: drive).
 The ATAS indicator default settings are pre-configured for this location. Installing elsewhere requires manual editing of indicator parameters in ATAS.
 
+### Steps
+
+1. Download the source ZIP from the [latest release](https://github.com/Kza56/OFK_Atas_GEX/releases/latest)
+2. Extract it — you'll get a folder named `OFK_Atas_GEX-main`
+3. **Rename it to `OFK_Atas_GEX`** and move it to `C:\` so you have `C:\OFK_Atas_GEX\`
+4. Open PowerShell and run:
+
 ```powershell
-# 1. Copy the precompiled DLL to ATAS
+# Copy the precompiled DLL to ATAS
 Copy-Item "C:\OFK_Atas_GEX\dist\OFK_Atas_GEX.dll" "$env:APPDATA\ATAS\Indicators\" -Force
 
-# 2. Install Python dependencies
+# Install Python dependencies
 cd C:\OFK_Atas_GEX\OFK_GEX_Pipeline
 pip install -r requirements.txt
 playwright install chromium
-
-# 3. Restart ATAS — indicators appear in the "Custom" category:
-#      - OFK NQ GEX Levels
-#      - OFK NQ Context Score
-#      - OFK ES GEX Levels
-#      - OFK ES Context Score
 ```
+
+5. Restart ATAS — indicators appear in the "Custom" category:
+   - OFK NQ GEX Levels
+   - OFK NQ Context Score
+   - OFK ES GEX Levels
+   - OFK ES Context Score
 
 The precompiled DLL targets .NET 10 / Windows. No build tools required.
 
