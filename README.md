@@ -17,8 +17,9 @@ The ATAS indicator default settings are pre-configured for this location. Instal
 
 1. Download the source ZIP from the [latest release](https://github.com/Kza56/OFK_Atas_GEX/releases/latest)
 2. Extract it — you'll get a folder named `OFK_Atas_GEX-main`
-3. **Rename it to `OFK_Atas_GEX`** and move it to `C:\` so you have `C:\OFK_Atas_GEX\`
-4. Open PowerShell and run:
+3. Rename it to `OFK_Atas_GEX` and move it to `C:\` so you have `C:\OFK_Atas_GEX\`
+4. **Install Python 3.10 or higher** (tested on 3.14) if you don't have it already: download from [python.org](https://www.python.org/downloads/windows/) and **make sure to check "Add Python to PATH"** during installation. Verify it works by opening PowerShell and running `python --version` — you should see `Python 3.10` or higher (try `python3 --version` if `python` is not recognized).
+5. Open PowerShell and run:
 
 ```powershell
 # Copy the precompiled DLL to ATAS
@@ -30,7 +31,7 @@ pip install -r requirements.txt
 playwright install chromium
 ```
 
-5. Restart ATAS — indicators appear in the "Custom" category:
+6. Restart ATAS — indicators appear in the "Custom" category:
    - OFK NQ GEX Levels
    - OFK NQ Context Score
    - OFK ES GEX Levels
