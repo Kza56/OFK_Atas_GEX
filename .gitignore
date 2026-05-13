@@ -28,3 +28,4 @@ OFK_GEX_Pipeline/logs/
 *.swp
 .DS_Store
 Thumbs.db
+*.sln
