@@ -28,7 +28,7 @@ import argparse
 import logging
 import re
 import tarfile
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -46,7 +46,7 @@ def make_backup() -> Optional[Path]:
         log.warning(f"history dir empty or missing: {HISTORY_DIR}")
         return None
     BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-    ts  = datetime.now().strftime("%Y%m%d_%H%M%S")
+    ts  = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
     out = BACKUP_DIR / f"snapshots_{ts}.tar.gz"
     with tarfile.open(out, "w:gz") as tar:
         tar.add(HISTORY_DIR, arcname="history")
@@ -64,7 +64,7 @@ def cleanup_old_backups(retention_days: int = 30,
     """
     if not BACKUP_DIR.exists():
         return 0
-    cutoff = datetime.now().date() - timedelta(days=retention_days)
+    cutoff = datetime.now(timezone.utc).date() - timedelta(days=retention_days)
     backups = sorted(BACKUP_DIR.glob("snapshots_*.tar.gz"))
     monthly_seen = set()
     deleted = 0
@@ -113,7 +113,7 @@ def main():
             n = sum(1 for _ in HISTORY_DIR.iterdir())
             log.info(f"  history: {n} files in {HISTORY_DIR}")
         if BACKUP_DIR.exists():
-            cutoff = datetime.now().date() - timedelta(days=args.retention)
+            cutoff = datetime.now(timezone.utc).date() - timedelta(days=args.retention)
             for bk in sorted(BACKUP_DIR.glob("snapshots_*.tar.gz")):
                 m = _NAME_PATTERN.match(bk.name)
                 if not m: continue

@@ -8,6 +8,10 @@ Resolution order for each path:
   1. Environment variable (if set)
   2. Default = relative to PIPELINE_ROOT (this file's parent directory)
 """
+# Timezone convention:
+# All internal logic and JSON timestamps use UTC (datetime.now(timezone.utc)).
+# Console logs use local time (datetime.now()) for readability.
+# ATAS indicator displays use the chart timezone (set in ATAS preferences).
 from __future__ import annotations
 import json
 import os
@@ -108,8 +112,8 @@ def cleanup_history(symbol: str, max_days: int = HISTORY_MAX_DAYS) -> int:
     Returns the number of files removed."""
     if not HISTORY_DIR.exists():
         return 0
-    from datetime import datetime, timedelta
-    cutoff = datetime.now().date() - timedelta(days=max_days)
+    from datetime import datetime, timedelta, timezone
+    cutoff = datetime.now(timezone.utc).date() - timedelta(days=max_days)
     pattern = f"{symbol}_full_levels_*.json"
     deleted = 0
     for snap in HISTORY_DIR.glob(pattern):
@@ -159,8 +163,8 @@ def cleanup_intraday_history(symbol: str,
     than max_days. Returns the number of files removed."""
     if not INTRADAY_HISTORY_DIR.exists():
         return 0
-    from datetime import datetime, timedelta
-    cutoff = datetime.now().date() - timedelta(days=max_days)
+    from datetime import datetime, timedelta, timezone
+    cutoff = datetime.now(timezone.utc).date() - timedelta(days=max_days)
     pattern = f"{symbol}_full_levels_*_*.json"
     deleted = 0
     for snap in INTRADAY_HISTORY_DIR.glob(pattern):
@@ -193,8 +197,8 @@ def save_intraday_snapshot(symbol: str, full_dict: Dict[str, Any]) -> Path:
 
     Returns the path written.
     """
-    from datetime import datetime
-    now = datetime.now()
+    from datetime import datetime, timezone
+    now = datetime.now(timezone.utc)
     date_str = now.strftime("%Y%m%d")
     time_str = now.strftime("%H%M")
     INTRADAY_HISTORY_DIR.mkdir(parents=True, exist_ok=True)
@@ -219,8 +223,8 @@ def compute_iv_rank(symbol: str, current_iv: float, lookback_days: int = 252,
     if not HISTORY_DIR.exists() or current_iv <= 0:
         return {"ivr": None, "status": "insufficient", "n_samples": 0}
 
-    from datetime import datetime, timedelta
-    cutoff = datetime.now().date() - timedelta(days=lookback_days)
+    from datetime import datetime, timedelta, timezone
+    cutoff = datetime.now(timezone.utc).date() - timedelta(days=lookback_days)
     pattern = f"{symbol}_full_levels_*.json"
 
     ivs = []

@@ -39,16 +39,10 @@ _cache_fetched_at: Optional[datetime] = None
 _CACHE_TTL_SECONDS = 1800   # 30 min: ForexFactory does not change faster than this
 
 
-def _et_to_utc(dt_naive: datetime) -> Optional[datetime]:
-    """Convert a naive ET (Eastern Time) datetime to a UTC-aware datetime.
-    Uses pytz if available (DST correct), otherwise static ET=UTC-5 fallback."""
-    try:
-        import pytz
-        et = pytz.timezone("America/New_York")
-        return et.localize(dt_naive).astimezone(timezone.utc)
-    except ImportError:
-        # Static fallback — incorrect under DST, but avoids crash if pytz missing
-        return dt_naive.replace(tzinfo=timezone(timedelta(hours=-5))).astimezone(timezone.utc)
+def _ff_csv_to_utc(dt_naive: datetime) -> Optional[datetime]:
+    """La CSV de nfs.faireconomy.media renvoie les heures déjà en UTC.
+    Conversion en datetime UTC aware sans décalage."""
+    return dt_naive.replace(tzinfo=timezone.utc)
 
 
 def fetch_econ_events(min_impact: str = "High",
@@ -98,7 +92,7 @@ def fetch_econ_events(min_impact: str = "High",
                                                    "%m-%d-%Y %I:%M%p")
                 except ValueError:
                     continue
-                dt_utc = _et_to_utc(dt_naive)
+                dt_utc = _ff_csv_to_utc(dt_naive)
                 if dt_utc is None:
                     continue
                 events.append({
