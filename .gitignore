@@ -1,14 +1,23 @@
 # .NET build artifacts
-OFK_ATAS/bin/
-OFK_ATAS/obj/
+**/bin/
+**/obj/
 
-# Python bytecode
+# Python environments, bytecode, and test caches
+.venv/
+venv/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
+.pytest_cache/
 
-# Pipeline runtime data (large, machine-specific)
+# Local environment configuration and secrets
+.env
+.env.*
+!.env.example
+!**/.env.example
+
+# Pipeline runtime data (large, generated, or machine-specific)
 OFK_GEX_Pipeline/data/*.json
 OFK_GEX_Pipeline/data/*.pdf
 OFK_GEX_Pipeline/data/*.txt
@@ -17,7 +26,7 @@ OFK_GEX_Pipeline/data/backups/
 OFK_GEX_Pipeline/data/logs/
 OFK_GEX_Pipeline/logs/
 
-# But keep the samples folder (they're committed examples)
+# Keep committed examples
 !OFK_GEX_Pipeline/data/samples/
 !OFK_GEX_Pipeline/data/samples/**
 

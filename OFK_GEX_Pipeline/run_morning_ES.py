@@ -1,8 +1,7 @@
 """
-run_morning_ES.py — Main orchestrator for ES E-mini S&P500
-Steps: CME ES -> CBOE SPY -> merge -> Claude briefing -> PDF
+run_morning_ES.py — ES E-mini S&P500 pipeline orchestrator.
 
-Usage: py run_morning_ES.py
+Steps: CME ES → CBOE SPY → merge → Codex briefing → PDF.
 """
 import json
 import subprocess
@@ -418,10 +417,19 @@ def merge_levels() -> dict:
 
 
 def run_agent():
-    """Run Claude AI briefing for ES."""
-    step("STEP 4 — Claude AI briefing ES")
-    from claude_agent_ES import run_briefing_ES
-    run_briefing_ES()
+    """Run the optional Codex briefing without jeopardizing market data."""
+    step("STEP 4 — Codex AI briefing ES")
+    from codex_briefing import run_briefing
+    try:
+        briefing = run_briefing("ES")
+    except Exception as exc:
+        print(f"  WARNING: Codex briefing unavailable: {exc}")
+        print("  Full levels remain available; skipping the PDF for this run.")
+        return False
+    if (briefing.get("_provider") or {}).get("status") == "fallback":
+        print("  Codex fallback briefing persisted; skipping the PDF for this run.")
+        return False
+    return True
 
 
 def run_pdf():
@@ -437,18 +445,11 @@ if __name__ == "__main__":
     from logging_setup import setup_logging
     setup_logging()
 
-    def _pause_console():
-        """Prevents the cmd window from closing instantly (launched from ATAS button)."""
-        try:
-            input("\n  Press ENTER to close this window...")
-        except (EOFError, KeyboardInterrupt, OSError):
-            pass
-
     try:
         import argparse
-        p = argparse.ArgumentParser(description="ES morning pipeline (CME + CBOE + Claude + PDF)")
+        p = argparse.ArgumentParser(description="ES morning pipeline (CME + CBOE + Codex + PDF)")
         p.add_argument("--fast", action="store_true",
-                       help="Fast mode: skip Claude AI + PDF (CME + CBOE → JSON only)")
+                       help="Fast mode: skip Codex AI + PDF (CME + CBOE → JSON only)")
         p.add_argument("--skip-cme", action="store_true",
                        help="Skip CME scraping (uses the last existing CME JSON)")
         p.add_argument("--max-dte", type=int, default=7,
@@ -461,7 +462,6 @@ if __name__ == "__main__":
         if not is_market_open_today() and not args.ignore_holiday:
             print(f"\n  ABORT — NYSE closed today (weekend or holiday).")
             print(f"  Override with --ignore-holiday to fetch anyway.")
-            _pause_console()
             sys.exit(0)
 
         early_close = is_early_close_today()
@@ -488,17 +488,14 @@ if __name__ == "__main__":
 
         merge_levels()
         if not args.fast:
-            run_agent()
-            run_pdf()
+            if run_agent():
+                run_pdf()
         else:
-            print(f"\n  FAST mode: skip Claude AI + PDF.")
+            print(f"\n  FAST mode: skip Codex AI + PDF.")
     except SystemExit:
-        _pause_console()
         raise
     except Exception as e:
         import traceback
         print(f"\n  ❌ ERROR: {type(e).__name__}: {e}")
         traceback.print_exc()
-        _pause_console()
         sys.exit(1)
-    _pause_console()

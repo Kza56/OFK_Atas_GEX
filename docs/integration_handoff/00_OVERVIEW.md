@@ -11,7 +11,7 @@ OFK GEX Levels is a calculation pipeline that scrapes CME option chains (E-mini 
 | Layer | Tech | Role |
 |-------|------|------|
 | **Calculation pipeline** | Python 3.10+ (Playwright, yfinance, pandas, numpy, scipy) | CME/CBOE scraping, Greek calculations, merge, JSON export |
-| **AI briefing** | Claude Code CLI (Anthropic) | Generates a narrative JSON + PDF briefing from the merged JSON |
+| **AI briefing** | Codex CLI (OpenAI) | Generates a narrative JSON + PDF briefing from the merged JSON |
 | **PDF** | ReportLab (Python) | Dark-theme A4 briefing rendering |
 | **ATAS indicators** | C# .NET 10 (also net6.0) | JSON loading, on-chart level drawing, Context Score, WPF panel |
 | **Persistence** | JSON files on local disk | No database, no server |
@@ -40,7 +40,7 @@ User → clicks "GEX LEVELS" button in the ATAS panel
      → triggers run_morning_{NQ|ES}.py
      → CME scrape (Playwright) → CBOE fetch → VIX fetch → macro fetch
      → merge → full_levels_{NQ|ES}.json
-     → Claude briefing (optional) → briefing JSON + PDF
+     → Codex briefing (optional) → briefing JSON + PDF
      → historical snapshot archived
 ```
 
@@ -95,4 +95,4 @@ CBOE levels are computed in QQQ/SPY strikes then converted to NQ/ES prices via t
 | **CBOE** | Live QQQ/SPY option chain (0-7 DTE) | REST API `cdn.cboe.com/api/global/delayed_quotes/options/{ticker}.json` | 15 min delay | None (free) |
 | **Yahoo Finance** | VIX, VIX9D, QQQ/SPY spots | `yfinance` library | 15 min | None |
 | **Forex Factory** | USD macro calendar (High/Medium impact) | CSV `nfs.faireconomy.media/ff_calendar_thisweek.csv` | Real-time | None |
-| **Claude Code CLI** | Narrative AI briefing | Local `claude` CLI call | ~30 sec | Local Anthropic API key |
+| **Codex CLI** | Narrative AI briefing | Local `codex exec` call | Configured timeout | Codex authentication |

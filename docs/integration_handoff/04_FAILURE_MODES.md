@@ -11,7 +11,7 @@
 | **CBOE** | Empty chain (pre-market, weekend) | Intraday fields at 0, no error | `"partial"` | Same |
 | **yfinance** | Timeout / API down | VIX fields at 0 / absent | `"partial"` | `vix`, `vix9d`, `vix_regime`, `vix_term`, `vix_dod_change`, `vix_term_slope` |
 | **Forex Factory** | CSV 404 / format change | Macro fields absent or default | `"ok"` (non-blocking) | `macro_*` fields |
-| **Claude CLI** | Timeout / API rate limit | Briefing not generated, full_levels **unaffected** | No impact | `briefing_*.json` and PDF absent |
+| **Codex CLI** | Timeout / API rate limit | Deterministic fallback briefing is written; full_levels **unaffected** | PDF skipped for that run | `briefing_*.json` (fallback) |
 | **Disk** | Out of space | Crash on write | Possible corrupt file | All |
 | **Network** | Total outage | No file written | File unchanged (stale) | All |
 
@@ -52,12 +52,13 @@
 
 **CBOE specifics**: the chain is empty in pre-market (before ~09:15 ET) and after close (after ~16:15 ET). This is not an error — it is normal. Intraday fields will be 0 outside market hours.
 
-### Claude AI briefing fails
+### Codex AI briefing fails
 
-**Symptom**: `claude_agent_NQ.py` timeout or API error.
+**Symptom**: `codex_briefing.py` timeout or API error.
 
 **Impact**:
-- `briefing_NQ.json` is not written (or contains an error).
+- `briefing_NQ.json` contains a clearly marked raw-data fallback and no
+  directional recommendation.
 - `briefing_NQ_YYYY-MM-DD.pdf` is not generated.
 - **`full_levels_NQ.json` is NOT affected** — the briefing is independent post-processing.
 

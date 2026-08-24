@@ -6,7 +6,16 @@ ATAS indicators and Python pipeline for trading the E-mini Nasdaq-100 (NQ) and E
 
 - **Python pipeline** scrapes CME and CBOE option chains, computes Greeks Exposure levels (GEX, VEX, DEX, CEX), enriches with VIX and macro context, and writes a JSON file every 5 minutes during RTH.
 - **ATAS indicators (C#)** read the JSON and draw the levels live on NQ/ES charts, with an on-chart context score, a floating panel, an intraday replay, and 12 alert types.
-- **AI briefing** uses Claude to generate a daily JSON briefing with regime analysis, RTH plan (buy/sell zones, invalidations), and risk alerts. Rendered as a dark-theme A4 PDF.
+- **AI briefing** uses the Codex CLI to generate a daily JSON briefing with regime analysis, RTH plan (buy/sell zones, invalidations), and risk alerts. Rendered as a dark-theme A4 PDF.
+
+## Current macOS migration status
+
+The Python data pipeline and Codex briefing path are portable and now use
+macOS-safe process and path handling. The original full ATAS indicator remains
+Windows-oriented while its WPF dashboard and replay UI are being separated.
+Phase 1 includes a small native ATAS X probe under `OFK_ATAS_X_Probe/`; it is
+the compatibility baseline for the eventual Mac indicator DLL and is not yet
+the complete trading indicator.
 
 ## Quick install
 
@@ -140,7 +149,7 @@ python run_intraday_refresh.py NQ --loop --interval 300
 - Windows 10 / 11
 - ATAS 1.5+
 - Python 3.10+
-- Claude Code CLI (`npm i -g @anthropic-ai/claude-code`) for AI briefings
+- Codex CLI (`codex`) for AI briefings
 
 ## License
 

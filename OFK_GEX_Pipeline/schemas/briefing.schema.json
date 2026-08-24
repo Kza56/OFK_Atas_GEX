@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OFK GEX AI briefing",
+  "description": "Common output contract for NQ and ES morning briefings.",
+  "type": "object",
+  "required": [
+    "date",
+    "regime",
+    "bias",
+    "levels",
+    "rth_plan",
+    "risk_alerts",
+    "meta_context",
+    "one_line_summary"
+  ],
+  "properties": {
+    "date": { "type": "string" },
+    "trade_date": { "type": ["string", "null"] },
+    "generation_time": { "type": ["string", "null"] },
+    "spot_nq": { "type": ["number", "null"] },
+    "spot_es": { "type": ["number", "null"] },
+    "regime": { "type": "object" },
+    "bias": { "type": "object" },
+    "levels": { "type": "array", "items": { "type": "object" } },
+    "rth_plan": { "type": "object" },
+    "risk_alerts": { "type": "array", "items": { "type": "string" } },
+    "meta_context": { "type": "object" },
+    "one_line_summary": { "type": "string" }
+  },
+  "additionalProperties": true
+}

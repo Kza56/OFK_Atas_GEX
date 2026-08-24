@@ -66,7 +66,7 @@ ATAS itself is Windows-only, but the Python pipeline is portable. On macOS / Lin
 | VIX + macro | 08:12 – 08:15 | (in memory) | 2-5 sec |
 | Merge → full_levels | 08:15 – 08:16 | **`full_levels_NQ.json`** | < 1 sec |
 | Historical snapshot | 08:16 | `history/NQ_full_levels_YYYYMMDD.json` | < 1 sec |
-| Claude briefing | 08:16 – 08:45 | `briefing_NQ.json` | 20-40 sec |
+| Codex briefing | 08:16 – 08:45 | `briefing_NQ.json` | Configured timeout |
 | PDF | 08:45 – 08:46 | `briefing_NQ_YYYY-MM-DD.pdf` | 1-2 sec |
 
 **Maximum acceptable delay**: `full_levels_NQ.json` must be written **before 09:30 ET** (RTH open). If the morning pipeline is not run before 09:30, the intraday loop will use the previous day's JSON.

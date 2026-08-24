@@ -14,10 +14,10 @@ OFK_GEX_Pipeline/
 ├── cme_ES_browser_fetch.py     # scrape CME ES options (headless Playwright)
 ├── data_fetcher_NQ.py          # CBOE QQQ → missing metrics (NQ proxy)
 ├── data_fetcher_ES.py          # CBOE SPY → missing metrics (ES proxy)
-├── claude_agent_{NQ,ES}.py     # AI briefing via Claude Code CLI
+├── codex_briefing.py           # AI briefing via Codex CLI (read-only)
 ├── generate_pdf_{NQ,ES}.py     # PDF rendering of the briefing
 ├── run_morning_{NQ,ES}.py      # orchestrator (CME → CBOE → merge → AI → PDF)
-├── skills/                     # markdown specs for the Claude agent
+├── skills/                     # markdown specs for the briefing provider
 ├── data/                       # runtime outputs (gitignored)
 │   └── samples/                # output examples (committed)
 ├── requirements.txt
@@ -33,9 +33,14 @@ OFK_GEX_Pipeline/
 1. CME scrape   → cme_*_browser_fetch.py    →  {NQ,ES}_gex_latest.json   (native Greeks)
 2. CBOE scrape  → data_fetcher_*.py         →  levels_{NQ,ES}.json       (Max Pain, PCR, Top OI, EM)
 3. Merge        → run_morning_*.py          →  full_levels_{NQ,ES}.json  (what ATAS reads)
-4. AI briefing  → claude_agent_*.py         →  briefing_{NQ,ES}.json
+4. AI briefing  → codex_briefing.py         →  briefing_{NQ,ES}.json
 5. PDF          → generate_pdf_*.py         →  briefing_{NQ,ES}_YYYY-MM-DD.pdf
 ```
+
+If Codex is unavailable, `codex_briefing.py` writes a deterministic briefing
+with `_provider.status == "fallback"` and preserves the complete source data
+under `_raw_full_levels`. The morning runner leaves `full_levels_*.json` intact
+and skips the PDF for that run.
 
 ---
 
@@ -46,12 +51,13 @@ pip install -r requirements.txt
 playwright install chromium
 ```
 
-For the AI briefing, install the Claude Code CLI (`npm i -g @anthropic-ai/claude-code`).
-If the binary is somewhere other than the default Windows path, configure it:
+For the AI briefing, install the Codex CLI and make `codex` available on your
+PATH. If the binary is elsewhere, configure it without changing the code:
 
 ```bash
 cp .env.example .env
-# edit .env, uncomment the CLAUDE_CMD line with your path
+set -a; source .env; set +a
+# edit .env first if CODEX_CMD or the output directory needs changing
 ```
 
 ---
@@ -68,7 +74,7 @@ python run_morning_ES.py
 # Individual stages (for debug)
 python cme_NQ_browser_fetch.py
 python data_fetcher_NQ.py
-python claude_agent_NQ.py
+python codex_briefing.py NQ
 python generate_pdf_NQ.py
 ```
 

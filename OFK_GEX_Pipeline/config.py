@@ -48,12 +48,21 @@ def compute_data_quality(full_dict: Dict[str, Any]) -> str:
 # ── Roots ────────────────────────────────────────────────────────────────────
 PIPELINE_ROOT: Path = Path(__file__).parent.resolve()
 
+
+def _env_path(name: str, default: Path) -> Path:
+    """Resolve a path override with shell-style expansion and a safe default."""
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return Path(default)
+    return Path(os.path.expandvars(raw)).expanduser()
+
+
 # Main data directory (where all JSON / PDF / raw outputs land).
 # Override with env var GEX_DATA_DIR if you want to write elsewhere
 # (e.g. C:\gex_agent\data, ~/AppData/Roaming/ATAS/data, …).
-DATA_DIR: Path = Path(os.environ.get("GEX_DATA_DIR", PIPELINE_ROOT / "data"))
+DATA_DIR: Path = _env_path("GEX_DATA_DIR", PIPELINE_ROOT / "data")
 
-# Skills (markdown specs) consumed by the Claude agents.
+# Analysis prompts (markdown specs) consumed by the briefing provider.
 SKILLS_DIR: Path = PIPELINE_ROOT / "skills"
 
 # Historical snapshots (Phase 1.3 — daily archives of full_levels_*.json).
@@ -64,18 +73,18 @@ INTRADAY_HISTORY_DIR: Path = DATA_DIR / "history" / "intraday"
 
 # ── Per-instrument output paths ──────────────────────────────────────────────
 # CME-only output (written by cme_*_browser_fetch.py).
-NQ_GEX_JSON: Path = Path(os.environ.get("NQ_GEX_JSON", DATA_DIR / "NQ_gex_latest.json"))
-ES_GEX_JSON: Path = Path(os.environ.get("ES_GEX_JSON", DATA_DIR / "ES_gex_latest.json"))
+NQ_GEX_JSON: Path = _env_path("NQ_GEX_JSON", DATA_DIR / "NQ_gex_latest.json")
+ES_GEX_JSON: Path = _env_path("ES_GEX_JSON", DATA_DIR / "ES_gex_latest.json")
 
 # CBOE-only intermediate output (written by data_fetcher_*.py).
-NQ_LEVELS_JSON: Path = Path(os.environ.get("NQ_LEVELS_JSON", DATA_DIR / "levels_NQ.json"))
-ES_LEVELS_JSON: Path = Path(os.environ.get("ES_LEVELS_JSON", DATA_DIR / "levels_ES.json"))
+NQ_LEVELS_JSON: Path = _env_path("NQ_LEVELS_JSON", DATA_DIR / "levels_NQ.json")
+ES_LEVELS_JSON: Path = _env_path("ES_LEVELS_JSON", DATA_DIR / "levels_ES.json")
 
 # Merged final output (consumed by ATAS C# indicators).
-NQ_FULL_JSON: Path = Path(os.environ.get("NQ_FULL_JSON", DATA_DIR / "full_levels_NQ.json"))
-ES_FULL_JSON: Path = Path(os.environ.get("ES_FULL_JSON", DATA_DIR / "full_levels_ES.json"))
+NQ_FULL_JSON: Path = _env_path("NQ_FULL_JSON", DATA_DIR / "full_levels_NQ.json")
+ES_FULL_JSON: Path = _env_path("ES_FULL_JSON", DATA_DIR / "full_levels_ES.json")
 
-# Claude agent intermediate files.
+# AI briefing intermediate files.
 NQ_BRIEFING_JSON: Path = DATA_DIR / "briefing_NQ.json"
 ES_BRIEFING_JSON: Path = DATA_DIR / "briefing_ES.json"
 NQ_BRIEFING_RAW:  Path = DATA_DIR / "_briefing_NQ_raw.txt"
@@ -84,11 +93,27 @@ NQ_PROMPT_FILE:   Path = DATA_DIR / "_prompt_NQ.txt"
 ES_PROMPT_FILE:   Path = DATA_DIR / "_prompt_ES.txt"
 
 # ── External tools ───────────────────────────────────────────────────────────
-# Claude Code CLI (npm-installed). Override via env CLAUDE_CMD.
-CLAUDE_CMD: str = os.environ.get(
-    "CLAUDE_CMD",
-    "claude.cmd"
-)
+# Codex CLI is invoked without a shell so the same configuration works on
+# macOS, Linux, and Windows. Set CODEX_CMD when the executable is not on PATH.
+CODEX_CMD: str = os.environ.get("CODEX_CMD", "codex")
+
+
+def _env_int(name: str, default: int) -> int:
+    """Read a positive integer environment override with a useful error."""
+    raw = os.environ.get(name)
+    if raw is None or not raw.strip():
+        return default
+    try:
+        value = int(raw)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be an integer, got {raw!r}") from exc
+    if value <= 0:
+        raise ValueError(f"{name} must be greater than zero, got {value}")
+    return value
+
+
+# Maximum time allowed for one read-only Codex briefing invocation.
+CODEX_TIMEOUT_SECONDS: int = _env_int("CODEX_TIMEOUT_SECONDS", 180)
 
 
 def ensure_dirs() -> None:
@@ -100,11 +125,11 @@ def ensure_dirs() -> None:
 
 # Daily snapshot retention. Beyond this → deletion.
 # 380 days = 1 year + 15 days margin (enough for 252-day IV Rank).
-HISTORY_MAX_DAYS: int = int(os.environ.get("GEX_HISTORY_MAX_DAYS", "380"))
+HISTORY_MAX_DAYS: int = _env_int("GEX_HISTORY_MAX_DAYS", 380)
 
 # Intraday snapshot retention (replay feature). 7 days by default.
 # 7 days × ~80 snapshots/day × ~50KB ≈ 28 MB per symbol — acceptable.
-INTRADAY_HISTORY_MAX_DAYS: int = int(os.environ.get("GEX_INTRADAY_HISTORY_MAX_DAYS", "7"))
+INTRADAY_HISTORY_MAX_DAYS: int = _env_int("GEX_INTRADAY_HISTORY_MAX_DAYS", 7)
 
 
 def cleanup_history(symbol: str, max_days: int = HISTORY_MAX_DAYS) -> int:

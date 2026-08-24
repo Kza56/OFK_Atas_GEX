@@ -51,7 +51,7 @@ def parse_date_from_path(p: Path) -> Optional[date]:
 
 
 def load_briefing_for(symbol: str, snap_date: date) -> Optional[dict]:
-    """Loads the day's versioned briefing (claude_agent_*.py saves them under
+    """Loads the day's versioned briefing (codex_briefing.py saves them under
     HISTORY_DIR/briefings/{SYM}_briefing_YYYYMMDD.json)."""
     bdir = HISTORY_DIR / "briefings"
     if not bdir.exists():

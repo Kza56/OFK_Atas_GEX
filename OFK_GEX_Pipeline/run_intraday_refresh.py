@@ -2,8 +2,8 @@
 run_intraday_refresh.py — Fast mode for intraday scalping.
 
 Re-fetch ONLY CBOE (fast, free, ~1s) + merge with the latest morning
-CME JSON. Skip CME (slow + browser scrape), skip Claude (expensive),
-skip PDF (unnecessary during the session).
+CME JSON. Skip CME (slow + browser scrape); briefing generation is not part of
+the intraday loop, so no PDF is generated during the session.
 
 Updates the dynamic intraday metrics:
 - atm_iv_intraday (IVx 0-7 DTE)
