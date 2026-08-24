@@ -1,6 +1,6 @@
 """
 generate_pdf_ES.py — Generates the ES briefing as a dark-theme PDF
-Usage  : py generate_pdf_ES.py
+Usage  : python3 generate_pdf_ES.py
 Output : <DATA_DIR>/briefing_ES_YYYY-MM-DD.pdf  (DATA_DIR from config.py)
 """
 import json

@@ -4,14 +4,13 @@ This phase establishes a small build-and-load probe before the GEX indicator is
 refactored. The probe is intentionally independent of the Python pipeline and
 does not read repository data.
 
-## Current baseline
+## Recorded probe baseline
 
 - Host: macOS 26.5, Apple Silicon arm64
 - ATAS X: `8.0.14.647`
 - .NET SDK: `10.0.203`
 - ATAS X assemblies: `/Applications/ATAS X.app/Contents/MonoBundle`
-- Python baseline: `.venv` with Python 3.12.13
-- Existing Python tests: `39 passed`
+- Python requirement: Python 3.10+ in an ignored `.venv`
 
 ## What is verified
 
@@ -64,7 +63,7 @@ from the local application and are not copied into the repository.
 
 - [x] Probe builds as `net10.0` / `AnyCPU` with zero warnings and zero errors.
 - [x] Probe builds again with `--no-restore` (offline repeatability).
-- [x] Existing Python test suite remains green (`39 passed`).
+- [x] The Python test suite passed in the recorded validation environment.
 - [ ] Probe is added to a chart in ATAS X and visibly renders the green
   histogram and `OFK ATAS X probe — loaded` label.
 

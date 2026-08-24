@@ -11,7 +11,7 @@
 | **CBOE** | Empty chain (pre-market, weekend) | Intraday fields at 0, no error | `"partial"` | Same |
 | **yfinance** | Timeout / API down | VIX fields at 0 / absent | `"partial"` | `vix`, `vix9d`, `vix_regime`, `vix_term`, `vix_dod_change`, `vix_term_slope` |
 | **Forex Factory** | CSV 404 / format change | Macro fields absent or default | `"ok"` (non-blocking) | `macro_*` fields |
-| **Codex CLI** | Timeout / API rate limit | Deterministic fallback briefing is written; full_levels **unaffected** | PDF skipped for that run | `briefing_*.json` (fallback) |
+| **Codex CLI** | Unavailable, timeout, nonzero exit, or invalid output | Raw-data fallback is recorded; a previous valid briefing is preserved; full_levels **unaffected** | PDF skipped for that run | Briefing diagnostics; `briefing_*.json` only on a first-run fallback |
 | **Disk** | Out of space | Crash on write | Possible corrupt file | All |
 | **Network** | Total outage | No file written | File unchanged (stale) | All |
 
@@ -57,8 +57,10 @@
 **Symptom**: `codex_briefing.py` timeout or API error.
 
 **Impact**:
-- `briefing_NQ.json` contains a clearly marked raw-data fallback and no
-  directional recommendation.
+- A complete raw-data fallback with no directional recommendation is written to
+  the adapter's diagnostic output.
+- An existing schema-valid `briefing_NQ.json` is preserved. If no valid
+  briefing exists yet, the schema-valid fallback is published instead.
 - `briefing_NQ_YYYY-MM-DD.pdf` is not generated.
 - **`full_levels_NQ.json` is NOT affected** — the briefing is independent post-processing.
 
@@ -127,13 +129,19 @@ ELSE → OK
 
 ---
 
-## Atomic write
+## Publication behavior
 
-JSON writing is **not atomic** in the current implementation. The file is written directly via `json.dump()`. In theory, a consumer reading during the write could read a truncated JSON.
+The primary `full_levels_*.json` market-data writers still write directly. A
+consumer reading during one of those writes could briefly observe truncated
+JSON.
 
-**Practical mitigation**:
+**Primary-data mitigation**:
 - Write takes < 10 ms (15-25 KB file).
 - The C# (ATAS) consumer re-reads the file every 5 minutes, not continuously.
 - If JSON parsing fails on the consumer side, that is a concurrent read case → retry in 1 second.
 
-**Possible improvement** (not implemented): write to a temporary file then `os.replace()` (atomic on Windows NTFS and Linux ext4).
+Briefing publication is stricter: Codex writes to a unique same-directory
+temporary file, the adapter parses and locally validates the result against the
+briefing schema, and only then atomically replaces the stable briefing. Codex
+failures and invalid results cannot overwrite a previous valid briefing, and
+temporary files are removed on both success and failure.

@@ -1,6 +1,6 @@
 """
 generate_pdf_NQ.py — Generates the NQ briefing as a dark-theme PDF
-Usage  : py generate_pdf_NQ.py
+Usage  : python3 generate_pdf_NQ.py
 Output : <DATA_DIR>/briefing_NQ_YYYY-MM-DD.pdf  (DATA_DIR from config.py)
 """
 import json

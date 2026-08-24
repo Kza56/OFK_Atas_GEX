@@ -59,7 +59,7 @@ def _env_path(name: str, default: Path) -> Path:
 
 # Main data directory (where all JSON / PDF / raw outputs land).
 # Override with env var GEX_DATA_DIR if you want to write elsewhere
-# (e.g. C:\gex_agent\data, ~/AppData/Roaming/ATAS/data, …).
+# (e.g. ~/market-data/ofk-gex or another writable directory).
 DATA_DIR: Path = _env_path("GEX_DATA_DIR", PIPELINE_ROOT / "data")
 
 # Analysis prompts (markdown specs) consumed by the briefing provider.

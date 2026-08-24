@@ -3,7 +3,7 @@ data_fetcher_ES.py — CBOE SPY options chain fetcher (ES proxy)
 Computes: Max Pain, Expected Move, PCR, GEX per strike, Top OI strikes
 Converts SPY values to ES using the live SPY/ES ratio
 
-Usage: py data_fetcher_ES.py
+Usage: python3 data_fetcher_ES.py
 """
 import requests
 import json

@@ -87,5 +87,16 @@
     "PCR 1.545 very put-heavy signals defensive institutional hedging, caution on aggressive longs",
     "Narrow Expected Move ±280 pts in pinning regime: range breakouts 27337/27897 often trapped by dealers"
   ],
+  "meta_context": {
+    "vix": 16.8,
+    "vix_regime": "normal",
+    "vix_term": "contango",
+    "vix_dod_change": -0.4,
+    "macro_in_blackout": false,
+    "macro_next_event": "ISM Manufacturing PMI",
+    "macro_minutes_to_next": 110,
+    "data_quality": "ok",
+    "interpretation": "Normal volatility and a clear macro window support range trading while spot remains above the gamma flip."
+  },
   "one_line_summary": "Positive GEX regime at gamma flip: scalp range 27337–27897 by fading extremes, bearish switch below 27600 toward 27337 then 26425"
 }

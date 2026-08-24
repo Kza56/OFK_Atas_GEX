@@ -25,7 +25,7 @@ The Python pipeline **produces** the data. The C# ATAS code **consumes** it. The
 | Platform | Status | Notes |
 |----------|--------|-------|
 | **ATAS Windows** | Production | Indicators compiled to DLL, loaded by ATAS |
-| ATAS X macOS | Not supported | The Python pipeline is portable, but the C# indicators use WPF (Windows-only) |
+| ATAS X macOS | Probe only | The native compatibility probe builds; the full WPF indicator is not yet ported, and probe chart rendering remains a manual gate |
 | NinjaTrader 8 | Not supported | The JSON is portable, but indicators are not ported |
 | Other platform | Possible | Any consumer able to read a local JSON can integrate |
 
@@ -57,8 +57,8 @@ User → clicks "Loop ON" button in the ATAS panel
 
 The pipeline can also be launched manually from a terminal:
 ```bash
-python run_morning_NQ.py
-python run_intraday_refresh.py NQ --loop --interval 300
+python3 run_morning_NQ.py
+python3 run_intraday_refresh.py NQ --loop --interval 300
 ```
 
 ---

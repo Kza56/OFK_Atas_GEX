@@ -5,23 +5,92 @@ import json
 import subprocess
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, Callable
 
 import pytest
 
 import codex_briefing as provider
 
 
-def _briefing() -> dict:
+def _briefing(symbol: str = "NQ") -> dict[str, Any]:
+    lower = symbol.lower()
     return {
         "date": "2026-08-24",
+        "trade_date": "20260824",
+        f"spot_{lower}": 21000 if symbol == "NQ" else 5700,
         "regime": {"gex_label": "positive"},
         "bias": {"direction": "neutral"},
         "levels": [],
         "rth_plan": {},
         "risk_alerts": [],
         "meta_context": {},
-        "one_line_summary": "test",
+        "one_line_summary": f"{symbol} test briefing",
     }
+
+
+def _source(symbol: str) -> dict[str, Any]:
+    lower = symbol.lower()
+    return {
+        "trade_date": "20260824",
+        f"spot_{lower}": 21000 if symbol == "NQ" else 5700,
+        "total_gex": 2_000_000_000,
+        "gamma_flip": 20900 if symbol == "NQ" else 5675,
+    }
+
+
+def _output_runner(
+    payload: str | dict[str, Any],
+    *,
+    returncode: int = 0,
+    stderr: str = "",
+    captured: dict[str, Any] | None = None,
+) -> Callable[..., Any]:
+    text = payload if isinstance(payload, str) else json.dumps(payload)
+
+    def fake_run(command, **kwargs):
+        output = Path(command[command.index("--output-last-message") + 1])
+        output.write_text(text, encoding="utf-8")
+        if captured is not None:
+            captured.update(command=command, kwargs=kwargs, output=output)
+        return SimpleNamespace(returncode=returncode, stdout="", stderr=stderr)
+
+    return fake_run
+
+
+def _run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    symbol: str = "NQ",
+    runner: Callable[..., Any] | None = None,
+    codex_command: str | list[str] = "codex",
+    allow_fallback: bool = True,
+) -> tuple[dict[str, Any], Path, Path]:
+    source_path = tmp_path / f"full_levels_{symbol}.json"
+    source_path.write_text(json.dumps(_source(symbol)), encoding="utf-8")
+    briefing_path = tmp_path / f"briefing_{symbol}.json"
+    raw_path = tmp_path / f"raw_{symbol}.json"
+    monkeypatch.setattr(provider.pipeline_config, "HISTORY_DIR", tmp_path / "history")
+    monkeypatch.setattr(provider.pipeline_config, "PIPELINE_ROOT", tmp_path)
+    if runner is not None:
+        monkeypatch.setattr(
+            provider.shutil, "which", lambda executable: "/usr/local/bin/codex"
+        )
+
+    result = provider.run_symbol_briefing(
+        symbol,
+        full_json=source_path,
+        briefing_json=briefing_path,
+        raw_file=raw_path,
+        prompt_file=tmp_path / f"prompt_{symbol}.txt",
+        schema_file=provider.SCHEMA_FILE,
+        codex_command=codex_command,
+        timeout_seconds=2,
+        runner=runner or subprocess.run,
+        allow_fallback=allow_fallback,
+        archive_briefing=False,
+    )
+    return result, briefing_path, raw_path
 
 
 def test_build_codex_command_is_shell_free(tmp_path: Path):
@@ -40,7 +109,9 @@ def test_build_codex_command_is_shell_free(tmp_path: Path):
 
 
 def test_parse_briefing_json_accepts_markdown_fence():
-    result = provider.parse_briefing_json("```json\n" + json.dumps(_briefing()) + "\n```")
+    result = provider.parse_briefing_json(
+        "```json\n" + json.dumps(_briefing()) + "\n```"
+    )
     assert result["bias"]["direction"] == "neutral"
 
 
@@ -51,104 +122,203 @@ def test_parse_briefing_json_rejects_missing_required_key():
         provider.parse_briefing_json(json.dumps(value))
 
 
-def test_run_symbol_briefing_uses_codex_output_and_persists(tmp_path: Path, monkeypatch):
-    source_path = tmp_path / "full_levels_NQ.json"
-    source_path.write_text(json.dumps({"trade_date": "20260824", "spot_nq": 21000}), encoding="utf-8")
-    briefing_path = tmp_path / "briefing_NQ.json"
-    raw_path = tmp_path / "raw.txt"
-    schema_path = tmp_path / "schema.json"
-    schema_path.write_text("{}", encoding="utf-8")
-    captured = {}
-
-    monkeypatch.setattr(provider.shutil, "which", lambda executable: "/usr/local/bin/codex")
-
-    def fake_run(command, **kwargs):
-        captured["command"] = command
-        captured["kwargs"] = kwargs
-        output = Path(command[command.index("--output-last-message") + 1])
-        output.write_text(json.dumps(_briefing()), encoding="utf-8")
-        return SimpleNamespace(returncode=0, stdout="", stderr="")
-
-    result = provider.run_symbol_briefing(
-        "NQ",
-        full_json=source_path,
-        briefing_json=briefing_path,
-        raw_file=raw_path,
-        schema_file=schema_path,
-        codex_command="codex",
-        runner=fake_run,
+@pytest.mark.parametrize("symbol", ["NQ", "ES"])
+def test_run_symbol_briefing_generates_and_publishes_both_symbols(
+    symbol: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    captured: dict[str, Any] = {}
+    result, briefing_path, raw_path = _run(
+        tmp_path,
+        monkeypatch,
+        symbol=symbol,
+        runner=_output_runner(_briefing(symbol), captured=captured),
     )
 
     assert result["_provider"]["status"] == "codex"
-    assert json.loads(briefing_path.read_text())["one_line_summary"] == "test"
-    assert captured["command"][1:5] == ["exec", "--sandbox", "read-only", "--output-schema"]
+    assert json.loads(briefing_path.read_text(encoding="utf-8"))[
+        "one_line_summary"
+    ] == f"{symbol} test briefing"
+    assert captured["command"][1:5] == [
+        "exec", "--sandbox", "read-only", "--output-schema"
+    ]
     assert captured["kwargs"]["input"].startswith("Read ")
     assert "shell" not in captured["kwargs"]
+    assert captured["output"] != briefing_path
+    assert not captured["output"].exists()
+    assert not (tmp_path / f"prompt_{symbol}.txt").exists()
+    assert raw_path.exists()
 
 
-def test_run_symbol_briefing_falls_back_when_codex_missing(tmp_path: Path, monkeypatch):
-    source = {"trade_date": "20260824", "spot_nq": 21000, "total_gex": 2_000_000_000, "gamma_flip": 20900}
-    source_path = tmp_path / "full_levels_NQ.json"
-    source_path.write_text(json.dumps(source), encoding="utf-8")
-    monkeypatch.setattr(provider.shutil, "which", lambda executable: None)
-
-    result = provider.run_symbol_briefing(
-        "NQ",
-        full_json=source_path,
-        briefing_json=tmp_path / "briefing.json",
-        raw_file=tmp_path / "raw.txt",
-        schema_file=tmp_path / "schema.json",
-        codex_command="codex",
+def test_malformed_json_through_provider_flow_uses_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    captured: dict[str, Any] = {}
+    result, briefing_path, raw_path = _run(
+        tmp_path,
+        monkeypatch,
+        runner=_output_runner("not valid JSON", captured=captured),
     )
 
     assert result["_provider"]["status"] == "fallback"
-    assert result["_raw_full_levels"] == source
-    assert result["bias"]["direction"] == "neutral"
-    raw = json.loads((tmp_path / "raw.txt").read_text())
-    assert raw["status"] == "fallback"
+    assert "invalid JSON" in result["_provider"]["error"]
+    assert json.loads(briefing_path.read_text(encoding="utf-8"))[
+        "_provider"
+    ]["status"] == "fallback"
+    assert json.loads(raw_path.read_text(encoding="utf-8"))["status"] == "fallback"
+    assert not captured["output"].exists()
 
 
-def test_fallback_interprets_textual_negative_regime(tmp_path: Path, monkeypatch):
-    source = {
-        "trade_date": "20260824",
-        "spot_nq": 21000,
-        "total_gex": 2_000_000_000,
-        "gex_regime": "negative_gamma",
-    }
+def test_schema_invalid_wrong_field_type_uses_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    invalid = _briefing()
+    invalid["risk_alerts"] = [42]
+
+    result, _, _ = _run(
+        tmp_path,
+        monkeypatch,
+        runner=_output_runner(invalid),
+    )
+
+    assert result["_provider"]["status"] == "fallback"
+    assert result["_raw_full_levels"] == _source("NQ")
+
+
+def test_nonzero_authentication_failure_uses_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    result, _, _ = _run(
+        tmp_path,
+        monkeypatch,
+        runner=_output_runner(
+            "",
+            returncode=1,
+            stderr="authentication required: run codex login",
+        ),
+    )
+
+    assert result["_provider"]["status"] == "fallback"
+    assert "status 1" in result["_provider"]["error"]
+    assert "authentication required" in result["_provider"]["error"]
+
+
+def test_process_start_network_oserror_uses_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    def unavailable(*args, **kwargs):
+        raise OSError("network is unavailable")
+
+    result, _, _ = _run(tmp_path, monkeypatch, runner=unavailable)
+
+    assert result["_provider"]["status"] == "fallback"
+    assert "Could not start Codex" in result["_provider"]["error"]
+    assert "network is unavailable" in result["_provider"]["error"]
+
+
+def test_timeout_uses_fallback_and_preserves_source(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    def timeout(command, **kwargs):
+        raise subprocess.TimeoutExpired(command, kwargs["timeout"])
+
+    result, _, _ = _run(tmp_path, monkeypatch, symbol="ES", runner=timeout)
+
+    assert result["_provider"]["status"] == "fallback"
+    assert "timed out after 2s" in result["_provider"]["error"]
+    assert result["_raw_full_levels"] == _source("ES")
+
+
+def test_missing_executable_uses_fallback(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(provider.shutil, "which", lambda executable: None)
+
+    result, _, _ = _run(tmp_path, monkeypatch)
+
+    assert result["_provider"]["status"] == "fallback"
+    assert "executable is unavailable" in result["_provider"]["error"]
+
+
+def test_explicitly_disabled_codex_keeps_market_data_usable(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    result, briefing_path, _ = _run(
+        tmp_path, monkeypatch, codex_command=[]
+    )
+
+    assert result["_provider"]["status"] == "fallback"
+    assert result["_raw_full_levels"] == _source("NQ")
+    assert briefing_path.exists()
+
+
+def test_allow_fallback_false_raises_without_publishing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    source_path = tmp_path / "full_levels_NQ.json"
+    source_path.write_text(json.dumps(_source("NQ")), encoding="utf-8")
+    briefing_path = tmp_path / "briefing_NQ.json"
+    monkeypatch.setattr(provider.shutil, "which", lambda executable: None)
+    monkeypatch.setattr(provider.pipeline_config, "HISTORY_DIR", tmp_path / "history")
+    monkeypatch.setattr(provider.pipeline_config, "PIPELINE_ROOT", tmp_path)
+
+    with pytest.raises(provider.BriefingUnavailable, match="unavailable"):
+        provider.run_symbol_briefing(
+            "NQ",
+            full_json=source_path,
+            briefing_json=briefing_path,
+            raw_file=tmp_path / "raw_NQ.json",
+            prompt_file=tmp_path / "prompt_NQ.txt",
+            schema_file=provider.SCHEMA_FILE,
+            codex_command="codex",
+            allow_fallback=False,
+            archive_briefing=False,
+        )
+
+    assert not briefing_path.exists()
+    assert not (tmp_path / "prompt_NQ.txt").exists()
+
+
+def test_provider_failure_preserves_previous_valid_briefing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    previous = _briefing()
+    previous["one_line_summary"] = "last known valid briefing"
+    briefing_path = tmp_path / "briefing_NQ.json"
+    briefing_path.write_text(json.dumps(previous), encoding="utf-8")
+    captured: dict[str, Any] = {}
+
+    result, published_path, raw_path = _run(
+        tmp_path,
+        monkeypatch,
+        runner=_output_runner("{malformed", captured=captured),
+    )
+
+    assert result["_provider"]["status"] == "fallback"
+    assert published_path == briefing_path
+    assert json.loads(briefing_path.read_text(encoding="utf-8")) == previous
+    assert json.loads(raw_path.read_text(encoding="utf-8"))["status"] == "fallback"
+    assert not captured["output"].exists()
+
+
+def test_fallback_interprets_textual_negative_regime(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    source = _source("NQ")
+    source["gex_regime"] = "negative_gamma"
     source_path = tmp_path / "full_levels_NQ.json"
     source_path.write_text(json.dumps(source), encoding="utf-8")
     monkeypatch.setattr(provider.shutil, "which", lambda executable: None)
+    monkeypatch.setattr(provider.pipeline_config, "HISTORY_DIR", tmp_path / "history")
+    monkeypatch.setattr(provider.pipeline_config, "PIPELINE_ROOT", tmp_path)
 
     result = provider.run_symbol_briefing(
         "NQ",
         full_json=source_path,
         briefing_json=tmp_path / "briefing.json",
         raw_file=tmp_path / "raw.txt",
-        schema_file=tmp_path / "schema.json",
+        schema_file=provider.SCHEMA_FILE,
         codex_command="codex",
+        archive_briefing=False,
     )
 
     assert result["regime"]["gex_label"] == "negative"
-
-
-def test_run_symbol_briefing_falls_back_on_timeout(tmp_path: Path, monkeypatch):
-    source_path = tmp_path / "full_levels_ES.json"
-    source_path.write_text(json.dumps({"trade_date": "20260824", "spot_es": 5000}), encoding="utf-8")
-    monkeypatch.setattr(provider.shutil, "which", lambda executable: "/usr/local/bin/codex")
-
-    def timeout(*args, **kwargs):
-        raise subprocess.TimeoutExpired(kwargs.get("timeout", 1), args[0])
-
-    result = provider.run_symbol_briefing(
-        "ES",
-        full_json=source_path,
-        briefing_json=tmp_path / "briefing.json",
-        raw_file=tmp_path / "raw.txt",
-        schema_file=tmp_path / "schema.json",
-        codex_command="codex",
-        timeout_seconds=2,
-        runner=timeout,
-    )
-
-    assert result["_provider"]["status"] == "fallback"
-    assert "timed out" in result["_provider"]["error"]

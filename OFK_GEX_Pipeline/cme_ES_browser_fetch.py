@@ -34,9 +34,9 @@ CME ES E-mini S&P 500 IDs:
   Multiplier      : $50/point
 
 Usage:
-  python cme_ES_browser_fetch.py
-  python cme_ES_browser_fetch.py --spot 5500
-  python cme_ES_browser_fetch.py --test-expiry
+  python3 cme_ES_browser_fetch.py
+  python3 cme_ES_browser_fetch.py --spot 5500
+  python3 cme_ES_browser_fetch.py --test-expiry
 """
 
 import argparse, json, logging, math, sys, time
@@ -890,10 +890,6 @@ def fetch_gex_levels(manual_spot: float = 0, headless: bool = False) -> Dict:
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main():
-    import sys, io
-    if sys.platform == 'win32':
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-
     parser = argparse.ArgumentParser(description="CME ES Options Greeks Fetcher")
     parser.add_argument('--spot',        type=float, default=0,
                         help="ES spot price (0=auto from CME quotes)")

@@ -23,8 +23,8 @@ Computed levels (SpotGamma-inspired):
   - Charm Magnet             : strike with max |CEX| (end-of-session price magnet)
 
 Usage:
-  python cme_browser_fetch.py --spot 24568
-  python cme_browser_fetch.py --test-expiry [--visible]
+  python3 cme_NQ_browser_fetch.py --spot 24568
+  python3 cme_NQ_browser_fetch.py --test-expiry [--visible]
 """
 
 import argparse, json, logging, math, sys, time
@@ -1196,10 +1196,6 @@ def gex_to_ml_features(levels: Dict, spot: float, atr: float) -> Dict[str, float
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def main():
-    # Fix Windows console encoding (cp1252 → utf-8)
-    import sys, io
-    if sys.platform == 'win32':
-        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
     parser = argparse.ArgumentParser()
     parser.add_argument('--spot',        type=float, default=0,
                         help="NQ spot price (0=auto from CME quotes)")

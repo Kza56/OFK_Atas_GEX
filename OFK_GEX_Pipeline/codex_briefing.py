@@ -20,11 +20,14 @@ import os
 import shlex
 import shutil
 import subprocess
+import tempfile
 from datetime import date
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 import config as pipeline_config
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import SchemaError
 
 
 SCHEMA_FILE = Path(__file__).with_name("schemas") / "briefing.schema.json"
@@ -131,6 +134,43 @@ def parse_briefing_json(text: str) -> dict[str, Any]:
     if not isinstance(value["one_line_summary"], str):
         raise BriefingUnavailable("Codex briefing one_line_summary must be text")
     return value
+
+
+def _schema_validator(schema_file: Path) -> Draft202012Validator:
+    """Load and check the local Draft 2020-12 briefing schema."""
+    try:
+        schema = json.loads(schema_file.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise BriefingUnavailable(f"Briefing schema was not found: {schema_file}") from exc
+    except (OSError, json.JSONDecodeError) as exc:
+        raise BriefingUnavailable(f"Briefing schema is unreadable: {schema_file}") from exc
+    if not isinstance(schema, dict):
+        raise BriefingUnavailable("Briefing schema must be a JSON object")
+    try:
+        Draft202012Validator.check_schema(schema)
+    except SchemaError as exc:
+        raise BriefingUnavailable(f"Briefing schema is invalid: {exc.message}") from exc
+    return Draft202012Validator(schema)
+
+
+def _validate_briefing(
+    briefing: Mapping[str, Any],
+    validator: Draft202012Validator,
+    *,
+    source: str,
+) -> None:
+    """Reject a briefing that does not satisfy the checked local schema."""
+    errors = sorted(
+        validator.iter_errors(dict(briefing)),
+        key=lambda error: tuple(str(part) for part in error.absolute_path),
+    )
+    if not errors:
+        return
+    error = errors[0]
+    location = ".".join(str(part) for part in error.absolute_path) or "<root>"
+    raise BriefingUnavailable(
+        f"{source} failed briefing schema validation at {location}: {error.message}"
+    )
 
 
 def _read_source(path: Path) -> dict[str, Any]:
@@ -270,8 +310,58 @@ def _fallback_briefing(symbol: str, source: Mapping[str, Any], error: str) -> di
 
 
 def _write_json(path: Path, value: Mapping[str, Any]) -> None:
+    """Durably publish JSON with a same-directory atomic replacement."""
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, indent=2, ensure_ascii=False), encoding="utf-8")
+    descriptor = -1
+    temporary: Path | None = None
+    try:
+        descriptor, temporary_name = tempfile.mkstemp(
+            dir=str(path.parent),
+            prefix=f".{path.name}.publish-",
+            suffix=".tmp",
+        )
+        temporary = Path(temporary_name)
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as handle:
+            descriptor = -1
+            json.dump(value, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+        temporary = None
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def _temporary_codex_output(raw_file: Path) -> Path:
+    """Reserve a unique output-last-message path next to the raw artifact."""
+    raw_file.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(
+        dir=str(raw_file.parent),
+        prefix=f".{raw_file.name}.codex-",
+        suffix=".tmp",
+    )
+    os.close(descriptor)
+    return Path(temporary_name)
+
+
+def _published_briefing_is_valid(
+    path: Path,
+    validator: Draft202012Validator,
+) -> bool:
+    """Return whether ``path`` contains a previously valid briefing."""
+    try:
+        value = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(value, dict):
+            return False
+        parse_briefing_json(json.dumps(value))
+        _validate_briefing(value, validator, source="Published briefing")
+    except (OSError, json.JSONDecodeError, BriefingUnavailable):
+        return False
+    return True
 
 
 def _archive_briefing(symbol: str, briefing: Mapping[str, Any]) -> None:
@@ -341,6 +431,7 @@ def run_symbol_briefing(
     schema_file: Path = SCHEMA_FILE,
     runner: Callable[..., Any] = subprocess.run,
     allow_fallback: bool = True,
+    archive_briefing: bool = True,
 ) -> dict[str, Any]:
     """Generate and persist one symbol's briefing.
 
@@ -370,43 +461,70 @@ def run_symbol_briefing(
         "Return only the briefing JSON, with no markdown or explanation. "
         "Do not modify any files."
     )
-    if prompt_file is not None:
-        prompt_file.parent.mkdir(parents=True, exist_ok=True)
-        prompt_file.write_text(prompt, encoding="utf-8")
     raw_file.parent.mkdir(parents=True, exist_ok=True)
-    # Never parse a stale response if the CLI exits without producing a new
-    # --output-last-message file.
-    raw_file.unlink(missing_ok=True)
-    error: str | None = None
+    codex_output: Path | None = None
+    validator: Draft202012Validator | None = None
+    published = False
     briefing: dict[str, Any]
     try:
-        parts = _command_parts(command_setting)
-        if not _executable_available(parts):
-            raise BriefingUnavailable(f"Codex executable is unavailable: {parts[0]}")
-        command = build_codex_command(parts, schema_file=schema_file, output_file=raw_file)
-        stdout = _run_codex(
-            command=command,
-            prompt=prompt,
-            cwd=pipeline_config.PIPELINE_ROOT,
-            timeout=timeout,
-            runner=runner,
-        )
-        output = raw_file.read_text(encoding="utf-8") if raw_file.exists() else stdout
-        briefing = parse_briefing_json(output)
-        briefing.setdefault("_provider", {"name": "codex", "status": "codex"})
-        _write_json(raw_file, briefing)
-    except (BriefingUnavailable, ValueError) as exc:
-        error = str(exc)
-        if not allow_fallback:
-            raise BriefingUnavailable(error) from exc
-        briefing = _fallback_briefing(symbol, source, error)
-        _write_json(raw_file, {"status": "fallback", "error": error, "briefing": briefing})
+        if prompt_file is not None:
+            prompt_file.parent.mkdir(parents=True, exist_ok=True)
+            prompt_file.write_text(prompt, encoding="utf-8")
+        try:
+            validator = _schema_validator(schema_file)
+            parts = _command_parts(command_setting)
+            if not _executable_available(parts):
+                raise BriefingUnavailable(f"Codex executable is unavailable: {parts[0]}")
+
+            # Codex never receives either stable artifact path. Its final
+            # message is isolated until parsing and local validation succeed.
+            codex_output = _temporary_codex_output(raw_file)
+            command = build_codex_command(
+                parts,
+                schema_file=schema_file,
+                output_file=codex_output,
+            )
+            stdout = _run_codex(
+                command=command,
+                prompt=prompt,
+                cwd=pipeline_config.PIPELINE_ROOT,
+                timeout=timeout,
+                runner=runner,
+            )
+            file_output = codex_output.read_text(encoding="utf-8")
+            output = file_output if file_output.strip() else stdout
+            briefing = parse_briefing_json(output)
+            _validate_briefing(briefing, validator, source="Codex briefing")
+            briefing["_provider"] = {"name": "codex", "status": "codex"}
+            _write_json(raw_file, briefing)
+            _write_json(briefing_json, briefing)
+            published = True
+        except (BriefingUnavailable, ValueError) as exc:
+            error = str(exc)
+            if not allow_fallback:
+                raise BriefingUnavailable(error) from exc
+            briefing = _fallback_briefing(symbol, source, error)
+            _write_json(
+                raw_file,
+                {"status": "fallback", "error": error, "briefing": briefing},
+            )
+
+            # A provider failure must not overwrite the last known-good
+            # briefing. With no valid prior artifact, publish the validated
+            # data-preserving fallback so unattended first runs remain usable.
+            if validator is not None:
+                _validate_briefing(briefing, validator, source="Fallback briefing")
+                if not _published_briefing_is_valid(briefing_json, validator):
+                    _write_json(briefing_json, briefing)
+                    published = True
     finally:
+        if codex_output is not None:
+            codex_output.unlink(missing_ok=True)
         if prompt_file is not None:
             prompt_file.unlink(missing_ok=True)
 
-    _write_json(briefing_json, briefing)
-    _archive_briefing(symbol, briefing)
+    if archive_briefing and published:
+        _archive_briefing(symbol, briefing)
     _print_summary(symbol, briefing, briefing_json)
     return briefing
 

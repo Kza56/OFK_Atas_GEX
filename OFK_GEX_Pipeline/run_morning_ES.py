@@ -419,8 +419,8 @@ def merge_levels() -> dict:
 def run_agent():
     """Run the optional Codex briefing without jeopardizing market data."""
     step("STEP 4 — Codex AI briefing ES")
-    from codex_briefing import run_briefing
     try:
+        from codex_briefing import run_briefing
         briefing = run_briefing("ES")
     except Exception as exc:
         print(f"  WARNING: Codex briefing unavailable: {exc}")

@@ -3,7 +3,7 @@ data_fetcher_NQ.py — CBOE QQQ options chain fetcher (proxy NQ)
 Fetches live options data from CBOE public API (no account required, 15-min delay)
 Computes: Max Pain, Expected Move, Put/Call Ratio, GEX by strike, Top OI strikes
 
-Usage: py data_fetcher_NQ.py
+Usage: python3 data_fetcher_NQ.py
 """
 import requests
 import json

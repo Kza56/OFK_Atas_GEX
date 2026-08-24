@@ -12,8 +12,10 @@ public static class GexReader
     public static JsonDocument ReadLatest(string instrument)
     {
         // instrument = "NQ" or "ES"
-        string dataDir = Environment.GetEnvironmentVariable("GEX_DATA_DIR")
-            ?? @"C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data";
+        string? dataDir = Environment.GetEnvironmentVariable("GEX_DATA_DIR");
+        if (string.IsNullOrWhiteSpace(dataDir))
+            throw new InvalidOperationException(
+                "Set GEX_DATA_DIR to the pipeline's generated-data directory.");
 
         string path = Path.Combine(dataDir, $"full_levels_{instrument}.json");
 

@@ -1,0 +1,62 @@
+{
+  "generated_at": "2026-05-01T06:12:00+00:00",
+  "trade_date": "20260430",
+  "spot_es": 5684.25,
+  "spot_spy": 567.86,
+  "spy_es_ratio": 10.0098,
+  "gamma_flip": 5675.0,
+  "vol_trigger": 5700.0,
+  "call_wall": 5750.0,
+  "put_wall": 5600.0,
+  "risk_pivot": 5625.0,
+  "vanna_flip": 5725.0,
+  "charm_magnet": 5700.0,
+  "total_gex": 18240000000.0,
+  "total_vex": 7310000000.0,
+  "total_cex": 51240.0,
+  "total_dex": 3910000000.0,
+  "gex_regime": 1,
+  "vex_regime": 1,
+  "call_wall_gex": 890000000.0,
+  "put_wall_gex": -740000000.0,
+  "max_pain_spy": 565.0,
+  "max_pain_es": 5656,
+  "expected_move_spy": 7.5,
+  "expected_move_es": 75,
+  "range_bas_spy": 560.36,
+  "range_haut_spy": 575.36,
+  "range_bas_es": 5609,
+  "range_haut_es": 5759,
+  "pcr": 1.12,
+  "vix": 16.8,
+  "vix_regime": "normal",
+  "vix_term": "contango",
+  "vix_dod_change": -0.4,
+  "macro_in_blackout": false,
+  "macro_next_event": "ISM Manufacturing PMI",
+  "macro_minutes_to_next": 110,
+  "data_quality": "ok",
+  "top_oi_strikes": [
+    {
+      "strike_spy": 570.0,
+      "strike_es": 5706,
+      "call_oi": 168420.0,
+      "put_oi": 121300.0,
+      "total_oi": 289720.0
+    },
+    {
+      "strike_spy": 560.0,
+      "strike_es": 5605,
+      "call_oi": 88200.0,
+      "put_oi": 190550.0,
+      "total_oi": 278750.0
+    },
+    {
+      "strike_spy": 575.0,
+      "strike_es": 5756,
+      "call_oi": 151900.0,
+      "put_oi": 74200.0,
+      "total_oi": 226100.0
+    }
+  ]
+}

@@ -10,34 +10,87 @@ ATAS indicators and Python pipeline for trading the E-mini Nasdaq-100 (NQ) and E
 
 ## Current macOS migration status
 
-The Python data pipeline and Codex briefing path are portable and now use
-macOS-safe process and path handling. The original full ATAS indicator remains
-Windows-oriented while its WPF dashboard and replay UI are being separated.
-Phase 1 includes a small native ATAS X probe under `OFK_ATAS_X_Probe/`; it is
-the compatibility baseline for the eventual Mac indicator DLL and is not yet
-the complete trading indicator.
+The Python data pipeline and Codex briefing adapter are the portable integration
+boundary for macOS, Linux, and Windows. Phase 2 hardening is in progress on the
+`phase-1-3-mac-adoption` branch; do not treat it as accepted until the automated
+checks and the external Codex NQ/ES acceptance runs have passed.
+
+The original full ATAS indicator remains Windows-oriented while its WPF
+dashboard and replay UI are being separated. Phase 1 includes a small native
+ATAS X probe under `OFK_ATAS_X_Probe/`; it is the compatibility baseline for the
+eventual Mac indicator DLL, not the complete trading indicator. Its final chart
+load/render check is still manual.
 
 ## Quick install
 
-**Required path**: the repository must end up at `C:\OFK_Atas_GEX\` (root of the C: drive).
-The ATAS indicator default settings are pre-configured for this location. Installing elsewhere requires manual editing of indicator parameters in ATAS.
+### macOS: Python pipeline
+
+The repository can live at any path on macOS. Python 3.10 or newer is required;
+the commands below create an ignored project-local virtual environment.
+
+```bash
+cd /path/to/atas-gex-plug
+python3 --version
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install -r OFK_GEX_Pipeline/requirements.txt
+python3 -m playwright install chromium
+
+cp OFK_GEX_Pipeline/.env.example OFK_GEX_Pipeline/.env
+# Edit .env if Codex or generated data should use non-default locations.
+```
+
+Export the local configuration before running the pipeline:
+
+```bash
+cd OFK_GEX_Pipeline
+set -a
+source .env
+set +a
+python3 run_morning_NQ.py
+# Or: python3 run_morning_ES.py
+```
+
+The Codex CLI is optional for raw market-data generation. If it is unavailable,
+the merged `full_levels_*.json` remains usable and the briefing path reports a
+fallback result. Network-backed CME/CBOE/VIX stages still require network access.
+
+To build the native ATAS X compatibility probe, return to the repository root
+and run:
+
+```bash
+./scripts/build_atas_x_probe.sh
+```
+
+See [the Phase 1 compatibility notes](docs/phase1-mac-compatibility.md) for the
+required manual chart-load check. The legacy full indicator DLL below is not a
+Mac substitute.
+
+### Windows: legacy full indicator
+
+The current full WPF indicator requires the repository at
+`C:\OFK_Atas_GEX\`. Its default settings are preconfigured for that location;
+installing elsewhere requires editing the indicator parameters in ATAS.
 
 ### Steps
 
 1. Download the source ZIP from the [latest release](https://github.com/Kza56/OFK_Atas_GEX/releases/latest)
 2. Extract it — you'll get a folder named `OFK_Atas_GEX-main`
 3. Rename it to `OFK_Atas_GEX` and move it to `C:\` so you have `C:\OFK_Atas_GEX\`
-4. **Install Python 3.10 or higher** (tested on 3.14) if you don't have it already: download from [python.org](https://www.python.org/downloads/windows/) and **make sure to check "Add Python to PATH"** during installation. Verify it works by opening PowerShell and running `python --version` — you should see `Python 3.10` or higher (try `python3 --version` if `python` is not recognized).
+4. Install Python 3.10 or newer from [python.org](https://www.python.org/downloads/windows/) and enable **Add Python to PATH**.
 5. Open PowerShell and run:
 
 ```powershell
 # Copy the precompiled DLL to ATAS
 Copy-Item "C:\OFK_Atas_GEX\dist\OFK_Atas_GEX.dll" "$env:APPDATA\ATAS\Indicators\" -Force
 
-# Install Python dependencies
+# Install Python dependencies for the portable pipeline
 cd C:\OFK_Atas_GEX\OFK_GEX_Pipeline
-pip install -r requirements.txt
-playwright install chromium
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+python -m playwright install chromium
 ```
 
 6. Restart ATAS — indicators appear in the "Custom" category:
@@ -50,7 +103,7 @@ The precompiled DLL targets .NET 10 / Windows. No build tools required.
 
 > **Building from source** (only if you modify the C# code): see [OFK_ATAS/README.md](OFK_ATAS/README.md).
 
-## Daily usage
+## Legacy Windows indicator usage
 
 The package ships **two indicators that work together**: `OFK GEX Levels` (the levels and the floating panel) and `OFK Context Score` (a directional bias gauge). Both read the same `full_levels_*.json` produced by the Python pipeline.
 
@@ -126,9 +179,20 @@ When enabled (default), the score is **forced to 0** under three conditions:
 
 The score also displays a small text overlay on the chart showing the live value and tag (e.g. `+51 [BULLISH]`).
 
-### Power-user shortcut (optional)
+### Terminal shortcut (optional)
 
-If you prefer to run the pipeline from the terminal — for cron jobs, headless setups, or scripting — the same scripts are directly callable:
+The portable Python entry points are directly callable for scheduled or
+headless use. On macOS, activate the virtual environment created above first:
+
+```bash
+cd /path/to/atas-gex-plug/OFK_GEX_Pipeline
+source ../.venv/bin/activate
+python3 run_morning_NQ.py
+python3 run_morning_ES.py
+python3 run_intraday_refresh.py NQ --loop --interval 300
+```
+
+The equivalent legacy Windows commands are:
 
 ```powershell
 cd C:\OFK_Atas_GEX\OFK_GEX_Pipeline
@@ -146,10 +210,10 @@ python run_intraday_refresh.py NQ --loop --interval 300
 
 ## Requirements
 
-- Windows 10 / 11
-- ATAS 1.5+
-- Python 3.10+
-- Codex CLI (`codex`) for AI briefings
+- Python 3.10+ on macOS, Linux, or Windows for the data pipeline
+- Codex CLI (`codex`) only when AI briefings are required
+- ATAS X and .NET 10 for the macOS compatibility probe
+- Windows 10/11 and ATAS 1.5+ for the current full WPF indicator
 
 ## License
 

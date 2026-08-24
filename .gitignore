@@ -2,14 +2,19 @@
 **/bin/
 **/obj/
 
-# Python environments, bytecode, and test caches
-.venv/
+# Python environments, bytecode, test caches, and coverage output
+.venv*/
 venv/
+env/
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
 
 # Local environment configuration and secrets
 .env
@@ -17,18 +22,15 @@ __pycache__/
 !.env.example
 !**/.env.example
 
-# Pipeline runtime data (large, generated, or machine-specific)
-OFK_GEX_Pipeline/data/*.json
-OFK_GEX_Pipeline/data/*.pdf
-OFK_GEX_Pipeline/data/*.txt
-OFK_GEX_Pipeline/data/history/
-OFK_GEX_Pipeline/data/backups/
-OFK_GEX_Pipeline/data/logs/
-OFK_GEX_Pipeline/logs/
+# Generated reports, logs, and pipeline runtime data
+*.pdf
+*.log
+logs/
+OFK_GEX_Pipeline/data/**
 
-# Keep committed examples
+# Keep only JSON fixtures under the committed samples directory.
 !OFK_GEX_Pipeline/data/samples/
-!OFK_GEX_Pipeline/data/samples/**
+!OFK_GEX_Pipeline/data/samples/**/*.json
 
 # IDE / OS
 .vs/

@@ -1,0 +1,86 @@
+{
+  "date": "2026-05-01",
+  "trade_date": "20260430",
+  "generation_time": "02:12 ET",
+  "spot_es": 5684.25,
+  "regime": {
+    "gex_label": "positive",
+    "total_gex_B": 18.24,
+    "total_vex_B": 7.31,
+    "gamma_zone": "above_flip",
+    "vol_implication": "Positive dealer gamma favors mean reversion while ES holds above 5675."
+  },
+  "bias": {
+    "direction": "neutral",
+    "conviction": "moderate",
+    "reason": "Spot is just above the gamma flip with balanced distance to the expected-move boundaries."
+  },
+  "levels": [
+    {
+      "type": "gamma_flip",
+      "approx_price_es": 5675,
+      "spot_distance_pct": -0.16,
+      "dealer_behavior": "Above the flip dealers dampen moves; below it hedging can amplify downside."
+    },
+    {
+      "type": "vol_trigger",
+      "approx_price_es": 5700,
+      "spot_distance_pct": 0.28,
+      "dealer_behavior": "First overhead volatility threshold and likely intraday decision point."
+    },
+    {
+      "type": "call_wall",
+      "approx_price_es": 5750,
+      "spot_distance_pct": 1.16,
+      "dealer_behavior": "Concentrated call gamma should provide resistance near the upper expected move."
+    },
+    {
+      "type": "put_wall",
+      "approx_price_es": 5600,
+      "spot_distance_pct": -1.48,
+      "dealer_behavior": "Put concentration is structural support below the lower expected move."
+    },
+    {
+      "type": "risk_pivot",
+      "approx_price_es": 5625,
+      "spot_distance_pct": -1.04,
+      "dealer_behavior": "A sustained break would weaken the positive-gamma range thesis."
+    },
+    {
+      "type": "expected_move_high",
+      "approx_price_es": 5759,
+      "spot_distance_pct": 1.32,
+      "dealer_behavior": "Upper implied range where extension risk rises."
+    },
+    {
+      "type": "expected_move_low",
+      "approx_price_es": 5609,
+      "spot_distance_pct": -1.32,
+      "dealer_behavior": "Lower implied range where responsive buyers may appear."
+    }
+  ],
+  "rth_plan": {
+    "buy_zone": 5625,
+    "sell_zone": 5750,
+    "bullish_invalidation": 5600,
+    "bearish_invalidation": 5760,
+    "logic": "Favor responsive trades inside the expected move while 5675 remains the regime divider."
+  },
+  "risk_alerts": [
+    "A sustained move below 5675 changes dealer hedging from damping to amplification.",
+    "Do not fade an accepted break beyond the 5609–5759 expected-move range.",
+    "Reduce exposure into the scheduled macro release window."
+  ],
+  "meta_context": {
+    "vix": 16.8,
+    "vix_regime": "normal",
+    "vix_term": "contango",
+    "vix_dod_change": -0.4,
+    "macro_in_blackout": false,
+    "macro_next_event": "ISM Manufacturing PMI",
+    "macro_minutes_to_next": 110,
+    "data_quality": "ok",
+    "interpretation": "Normal volatility and a clear macro window support two-sided trade inside the expected range."
+  },
+  "one_line_summary": "Positive GEX above 5675 favors an ES range between 5625 and 5750 until price accepts beyond either boundary."
+}

@@ -32,7 +32,18 @@
 
 ## Absolute paths
 
-### Windows (production)
+### Portable Python default
+
+Without an override, the pipeline writes beneath its own source directory:
+
+```text
+<repo>/OFK_GEX_Pipeline/data
+```
+
+Set `GEX_DATA_DIR` to any writable directory to keep runtime output outside the
+checkout. This works on macOS, Linux, and Windows.
+
+### Legacy Windows full-indicator default
 
 | Variable | Default value |
 |----------|---------------|
@@ -49,9 +60,12 @@ C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_NQ.json
 C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_ES.json
 ```
 
-### macOS / Linux (development)
+### macOS / Linux
 
-ATAS itself is Windows-only, but the Python pipeline is portable. On macOS / Linux, set `GEX_DATA_DIR` to your local data directory (any path you choose).
+The Python pipeline is portable. The default path is the repository-local
+`OFK_GEX_Pipeline/data` directory; use `GEX_DATA_DIR` if output should live
+elsewhere. ATAS X currently has a native build/load probe, while the full WPF
+indicator remains Windows-only.
 
 ---
 

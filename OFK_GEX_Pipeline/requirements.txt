@@ -6,3 +6,4 @@ pandas-market-calendars>=4.4
 yfinance>=0.2.40
 pytz>=2024.1
 pytest>=8.0
+jsonschema>=4.23

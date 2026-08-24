@@ -10,10 +10,10 @@ Retention policy:
 - Keep 1 backup per month (first of the month) indefinitely if --keep-monthly
 
 CLI usage:
-  py backup_snapshots.py                    # backup + cleanup with defaults
-  py backup_snapshots.py --retention 60     # keep 60 days
-  py backup_snapshots.py --no-monthly       # no monthly archiving
-  py backup_snapshots.py --dry-run
+  python3 backup_snapshots.py                    # backup + cleanup with defaults
+  python3 backup_snapshots.py --retention 60     # keep 60 days
+  python3 backup_snapshots.py --no-monthly       # no monthly archiving
+  python3 backup_snapshots.py --dry-run
 
 Programmatic usage:
   from backup_snapshots import make_backup, cleanup_old_backups

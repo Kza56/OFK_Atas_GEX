@@ -4,9 +4,11 @@
 
 ### `full_levels_NQ.json` / `full_levels_ES.json`
 
-- **Windows path**: `C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_NQ.json`
-- **macOS / Linux**: ATAS is Windows-only, but the Python pipeline itself is portable. Set `GEX_DATA_DIR` to your local data directory.
-- **Override**: env variable `GEX_DATA_DIR` overrides the `data/` directory
+- **Portable default**: `<repo>/OFK_GEX_Pipeline/data/full_levels_NQ.json`
+- **Override**: environment variable `GEX_DATA_DIR` redirects the complete
+  generated-data directory on macOS, Linux, or Windows
+- **Legacy Windows indicator default**:
+  `C:\OFK_Atas_GEX\OFK_GEX_Pipeline\data\full_levels_NQ.json`
 - **When**: written by the morning pipeline (~08:30 ET), then overwritten every 5 min by the intraday loop (09:30-16:00 ET)
 - **Format**: JSON UTF-8, single root object `{}`
 - **Typical size**: 15-25 KB

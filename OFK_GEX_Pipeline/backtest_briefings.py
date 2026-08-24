@@ -18,9 +18,9 @@ Computed metrics:
 - Average magnitude of correct vs incorrect moves
 
 Usage:
-  py backtest_briefings.py NQ
-  py backtest_briefings.py ES
-  py backtest_briefings.py NQ --since 2026-01-01
+  python3 backtest_briefings.py NQ
+  python3 backtest_briefings.py ES
+  python3 backtest_briefings.py NQ --since 2026-01-01
 
 Output: console + writes data/backtest_<SYMBOL>_<datestamp>.csv
 """

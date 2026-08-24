@@ -21,9 +21,10 @@ OFK_GEX_Pipeline/
 ├── data/                       # runtime outputs (gitignored)
 │   └── samples/                # output examples (committed)
 ├── requirements.txt
-├── .env.example
-└── .gitignore
+└── .env.example
 ```
+
+Repository-wide ignore rules live in the root `.gitignore`.
 
 ---
 
@@ -37,28 +38,43 @@ OFK_GEX_Pipeline/
 5. PDF          → generate_pdf_*.py         →  briefing_{NQ,ES}_YYYY-MM-DD.pdf
 ```
 
-If Codex is unavailable, `codex_briefing.py` writes a deterministic briefing
-with `_provider.status == "fallback"` and preserves the complete source data
-under `_raw_full_levels`. The morning runner leaves `full_levels_*.json` intact
-and skips the PDF for that run.
+Codex briefing publication is optional and isolated from raw market-data
+generation. A successful Codex result is validated against
+`schemas/briefing.schema.json` and atomically published. If Codex is
+unavailable, the adapter atomically records a complete raw-data fallback in its
+diagnostic file. A previous schema-valid briefing remains untouched; on a first
+run with no valid briefing, the validated fallback is atomically published.
+The morning runner always leaves `full_levels_*.json` intact and skips the PDF
+for a fallback run.
 
 ---
 
 ## Installation
 
+Python 3.10 or newer is required. From the repository root on macOS:
+
 ```bash
-pip install -r requirements.txt
-playwright install chromium
+python3 --version
+python3 -m venv .venv
+source .venv/bin/activate
+python3 -m pip install --upgrade pip
+python3 -m pip install -r OFK_GEX_Pipeline/requirements.txt
+python3 -m playwright install chromium
 ```
 
 For the AI briefing, install the Codex CLI and make `codex` available on your
 PATH. If the binary is elsewhere, configure it without changing the code:
 
 ```bash
+cd OFK_GEX_Pipeline
 cp .env.example .env
-set -a; source .env; set +a
 # edit .env first if CODEX_CMD or the output directory needs changing
+set -a
+source .env
+set +a
 ```
+
+`.venv`, `.env`, generated data, history, logs, and PDFs are ignored by Git.
 
 ---
 
@@ -66,17 +82,43 @@ set -a; source .env; set +a
 
 ```bash
 # Full NQ pipeline (≈ 2-3 min)
-python run_morning_NQ.py
+python3 run_morning_NQ.py
 
 # Full ES pipeline
-python run_morning_ES.py
+python3 run_morning_ES.py
 
 # Individual stages (for debug)
-python cme_NQ_browser_fetch.py
-python data_fetcher_NQ.py
-python codex_briefing.py NQ
-python generate_pdf_NQ.py
+python3 cme_NQ_browser_fetch.py
+python3 data_fetcher_NQ.py
+python3 codex_briefing.py NQ
+python3 generate_pdf_NQ.py
 ```
+
+Use `python3 run_morning_NQ.py --fast` (or the ES equivalent) to skip the Codex
+briefing and PDF stages. Add `--skip-cme` to reuse the latest CME file. Run
+`python3 run_intraday_refresh.py --help` for intraday loop and interval options.
+
+---
+
+## Verification
+
+From the repository root with the virtual environment active:
+
+```bash
+python3 -m pytest OFK_GEX_Pipeline/tests
+git diff --check
+./scripts/build_atas_x_probe.sh
+```
+
+The ATAS X build does not prove runtime compatibility. Loading the probe on a
+chart and confirming that it visibly renders remains a manual Phase 1 gate.
+Real Codex NQ and ES acceptance runs also require working CLI authentication and
+network access; report them as pending if those external prerequisites are not
+available.
+
+Phase 2 is complete only after the deterministic tests, NQ/ES schema and PDF
+checks, Codex-disabled behavior, and the external Codex acceptance runs have all
+been verified. Do not infer completion merely from a passing unit-test run.
 
 ---
 

@@ -19,11 +19,11 @@ charm_magnet, etc.) stay the same as the morning run (they barely
 change intraday).
 
 Usage:
-  py run_intraday_refresh.py NQ          # one refresh
-  py run_intraday_refresh.py ES
-  py run_intraday_refresh.py NQ --loop   # 5-min loop during RTH (default)
-  py run_intraday_refresh.py ES --loop --interval 600  # every 10 min
-  py run_intraday_refresh.py NQ --loop --cme-refresh-every 6  # re-scrape CME every 6 cycles (≈30 min if interval=5min)
+  python3 run_intraday_refresh.py NQ          # one refresh
+  python3 run_intraday_refresh.py ES
+  python3 run_intraday_refresh.py NQ --loop   # 5-min loop during RTH (default)
+  python3 run_intraday_refresh.py ES --loop --interval 600  # every 10 min
+  python3 run_intraday_refresh.py NQ --loop --cme-refresh-every 6  # re-scrape CME every 6 cycles (≈30 min if interval=5min)
 
 Tip: run in 2 terminals during RTH (one per instrument).
 """
