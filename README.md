@@ -15,11 +15,18 @@ boundary for macOS, Linux, and Windows. Phase 2 hardening is accepted on the
 `phase-1-3-mac-adoption` branch: the automated macOS gates and temporary,
 read-only external Codex acceptance runs for both NQ and ES pass.
 
+Phase 3 is also complete on that branch. The shared JSON contracts, NQ/ES
+context score, pure alert decisions, deterministic health/freshness policy, and
+replay indexing now live in a platform-neutral `.NET 10`/AnyCPU core under
+`src/OFK.Gex.Core`. Its 151 deterministic tests run on macOS without ATAS, WPF,
+Windows desktop assemblies, or proprietary binaries.
+
 The original full ATAS indicator remains Windows-oriented while its WPF
-dashboard and replay UI are being separated. Phase 1 includes a small native
-ATAS X probe under `OFK_ATAS_X_Probe/`; it is the compatibility baseline for the
-eventual Mac indicator DLL, not the complete trading indicator. Its final chart
-load/render check is still manual.
+dashboard and replay UI remain isolated. Connecting the portable core to a
+functional ATAS X indicator is Phase 4 and has not started. Phase 1 includes a
+small native ATAS X probe under `OFK_ATAS_X_Probe/`; it is the compatibility
+baseline for the eventual Mac indicator DLL, not the complete trading
+indicator. Its final chart load/render check is still manual.
 
 ## Quick install
 
@@ -63,9 +70,21 @@ and run:
 ./scripts/build_atas_x_probe.sh
 ```
 
+To build and test the Phase 3 portable indicator core on macOS:
+
+```bash
+dotnet restore tests/OFK.Gex.Core.Tests/OFK.Gex.Core.Tests.csproj --nologo
+dotnet build src/OFK.Gex.Core/OFK.Gex.Core.csproj \
+  --configuration Release --no-restore --nologo
+dotnet test tests/OFK.Gex.Core.Tests/OFK.Gex.Core.Tests.csproj \
+  --configuration Release --no-restore --nologo
+```
+
 See [the Phase 1 compatibility notes](docs/phase1-mac-compatibility.md) for the
-required manual chart-load check. The legacy full indicator DLL below is not a
-Mac substitute.
+required manual chart-load check and
+[the Phase 3 core notes](docs/phase3-portable-core.md) for architecture, public
+contracts, and the NQ/ES parity matrix. The legacy full indicator DLL below is
+not a Mac substitute.
 
 ### Windows: legacy full indicator
 
@@ -206,13 +225,15 @@ python run_intraday_refresh.py NQ --loop --interval 300
 - **[OFK_ATAS/README.md](OFK_ATAS/README.md)** — ATAS indicators reference (and how to build from source)
 - **[OFK_GEX_Pipeline/README.md](OFK_GEX_Pipeline/README.md)** — Python pipeline reference
 - **[OFK_GEX_Pipeline/GUIDE_GEX_LEVELS.md](OFK_GEX_Pipeline/GUIDE_GEX_LEVELS.md)** — Trader's guide to reading the levels (the most important doc for traders)
+- **[docs/phase3-portable-core.md](docs/phase3-portable-core.md)** — Portable core architecture, contracts, health precedence, and golden parity
 - **[docs/integration_handoff/](docs/integration_handoff/)** — Integration contract for external consumers (7 documents)
 
 ## Requirements
 
 - Python 3.10+ on macOS, Linux, or Windows for the data pipeline
 - Codex CLI (`codex`) only when AI briefings are required
-- ATAS X and .NET 10 for the macOS compatibility probe
+- .NET 10 for the portable core and macOS compatibility probe
+- ATAS X for the native probe and future host integration
 - Windows 10/11 and ATAS 1.5+ for the current full WPF indicator
 
 ## License

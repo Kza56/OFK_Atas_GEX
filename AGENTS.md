@@ -23,12 +23,31 @@ indicators. The Python side is the portable integration boundary: it writes
 - The ATAS X probe is the macOS compatibility baseline. Changes to the full
   Windows indicator remain separate until the portable core has tests.
 
+## Phase 3 rules
+
+- The platform-neutral indicator engine lives in `src/OFK.Gex.Core` and its
+  tests live in `tests/OFK.Gex.Core.Tests`. Target plain `net10.0`/AnyCPU; do
+  not use a Windows target framework.
+- Keep the core independent of ATAS, WPF, rendering, process launching,
+  platform-specific paths, P/Invoke, and proprietary application assemblies.
+- Parse the stable merged JSON contract with `System.Text.Json`. Preserve the
+  distinction between missing, malformed, and numeric-zero values.
+- Keep context scoring, alert conditions, data health, freshness, and replay
+  indexing deterministic and testable with an injected timestamp.
+- Treat `OFK_ATAS` as a read-only behavioral reference until the portable core
+  has passed its golden tests. Connecting the core to ATAS X is Phase 4.
+
 ## Verification
 
 From the repository root:
 
 ```bash
-python -m pytest OFK_GEX_Pipeline/tests
+dotnet restore tests/OFK.Gex.Core.Tests/OFK.Gex.Core.Tests.csproj --nologo
+dotnet build src/OFK.Gex.Core/OFK.Gex.Core.csproj --configuration Release --no-restore --nologo
+dotnet test tests/OFK.Gex.Core.Tests/OFK.Gex.Core.Tests.csproj --configuration Release --no-restore --nologo
+PYTHONPYCACHEPREFIX=/private/tmp/ofk-phase3-pycache \
+  .venv/bin/python -m pytest -p no:cacheprovider OFK_GEX_Pipeline/tests
+./scripts/build_atas_x_probe.sh
 git diff --check
 ```
 
