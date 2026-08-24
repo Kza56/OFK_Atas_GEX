@@ -14,16 +14,51 @@ import codex_briefing as provider
 
 def _briefing(symbol: str = "NQ") -> dict[str, Any]:
     lower = symbol.lower()
+    other = "es" if symbol == "NQ" else "nq"
     return {
         "date": "2026-08-24",
         "trade_date": "20260824",
+        "generation_time": "09:00 ET",
         f"spot_{lower}": 21000 if symbol == "NQ" else 5700,
-        "regime": {"gex_label": "positive"},
-        "bias": {"direction": "neutral"},
+        f"spot_{other}": None,
+        "regime": {
+            "gex_label": "positive",
+            "total_gex_B": 2.0,
+            "total_vex_B": 1.0,
+            "ivx_intraday_pct": 16.0,
+            "ivr_intraday_pct": None,
+            "ivr_status": "insufficient",
+            "skew_25d_intraday_vp": 2.0,
+            "term_intraday_regime": "contango",
+            "term_intraday_slope_vp": -0.5,
+            "gamma_zone": "positive",
+            "vol_implication": "Test volatility context.",
+        },
+        "bias": {
+            "direction": "neutral",
+            "conviction": "low",
+            "reason": "Test bias context.",
+        },
         "levels": [],
-        "rth_plan": {},
+        "rth_plan": {
+            "buy_zone": 20900 if symbol == "NQ" else 5675,
+            "sell_zone": 21100 if symbol == "NQ" else 5725,
+            "bullish_invalidation": 21200 if symbol == "NQ" else 5750,
+            "bearish_invalidation": 20800 if symbol == "NQ" else 5650,
+            "logic": "Test positive gamma zone plan.",
+        },
         "risk_alerts": [],
-        "meta_context": {},
+        "meta_context": {
+            "vix": 16.0,
+            "vix_regime": "normal",
+            "vix_term": "contango",
+            "vix_dod_change": -0.2,
+            "macro_in_blackout": False,
+            "macro_next_event": None,
+            "macro_minutes_to_next": -1,
+            "data_quality": "ok",
+            "interpretation": "Test market context.",
+        },
         "one_line_summary": f"{symbol} test briefing",
     }
 
@@ -141,12 +176,14 @@ def test_run_symbol_briefing_generates_and_publishes_both_symbols(
     assert captured["command"][1:5] == [
         "exec", "--sandbox", "read-only", "--output-schema"
     ]
+    assert captured["command"][5] == str(provider.CODEX_OUTPUT_SCHEMA_FILE)
     assert captured["kwargs"]["input"].startswith("Read ")
     assert "shell" not in captured["kwargs"]
     assert captured["output"] != briefing_path
     assert not captured["output"].exists()
     assert not (tmp_path / f"prompt_{symbol}.txt").exists()
     assert raw_path.exists()
+    assert f"spot_{'es' if symbol == 'NQ' else 'nq'}" not in result
 
 
 def test_malformed_json_through_provider_flow_uses_fallback(

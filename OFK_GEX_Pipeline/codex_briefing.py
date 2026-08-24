@@ -31,6 +31,9 @@ from jsonschema.exceptions import SchemaError
 
 
 SCHEMA_FILE = Path(__file__).with_name("schemas") / "briefing.schema.json"
+CODEX_OUTPUT_SCHEMA_FILE = (
+    Path(__file__).with_name("schemas") / "codex_output.schema.json"
+)
 DEFAULT_TIMEOUT_SECONDS = 180
 REQUIRED_KEYS = (
     "date",
@@ -171,6 +174,36 @@ def _validate_briefing(
     raise BriefingUnavailable(
         f"{source} failed briefing schema validation at {location}: {error.message}"
     )
+
+
+def _normalize_codex_briefing(
+    symbol: str,
+    briefing: dict[str, Any],
+) -> dict[str, Any]:
+    """Remove required null placeholders from the closed CLI response schema."""
+    lower = symbol.lower()
+    other = "es" if symbol == "NQ" else "nq"
+    own_spot = f"spot_{lower}"
+    other_spot = f"spot_{other}"
+    if not isinstance(briefing.get(own_spot), (int, float)):
+        raise BriefingUnavailable(f"Codex briefing {own_spot} must be numeric")
+    if briefing.get(other_spot) is not None:
+        raise BriefingUnavailable(f"Codex briefing {other_spot} must be null")
+    briefing.pop(other_spot, None)
+
+    own_price = f"approx_price_{lower}"
+    other_price = f"approx_price_{other}"
+    for index, level in enumerate(briefing["levels"]):
+        if not isinstance(level.get(own_price), (int, float)):
+            raise BriefingUnavailable(
+                f"Codex briefing levels.{index}.{own_price} must be numeric"
+            )
+        if level.get(other_price) is not None:
+            raise BriefingUnavailable(
+                f"Codex briefing levels.{index}.{other_price} must be null"
+            )
+        level.pop(other_price, None)
+    return briefing
 
 
 def _read_source(path: Path) -> dict[str, Any]:
@@ -429,6 +462,7 @@ def run_symbol_briefing(
     codex_command: str | Path | Sequence[str] | None = None,
     timeout_seconds: float | None = None,
     schema_file: Path = SCHEMA_FILE,
+    codex_schema_file: Path = CODEX_OUTPUT_SCHEMA_FILE,
     runner: Callable[..., Any] = subprocess.run,
     allow_fallback: bool = True,
     archive_briefing: bool = True,
@@ -458,12 +492,16 @@ def run_symbol_briefing(
     prompt = (
         f"Read {full_json.resolve()} and apply the analysis specification in "
         f"{(pipeline_config.SKILLS_DIR / f'gex_analyst_{symbol}.md').resolve()}. "
+        f"The shared structured-output schema requires spot_{'es' if symbol == 'NQ' else 'nq'} "
+        f"and approx_price_{'es' if symbol == 'NQ' else 'nq'} on every level; "
+        "set those unused symbol fields to null. "
         "Return only the briefing JSON, with no markdown or explanation. "
         "Do not modify any files."
     )
     raw_file.parent.mkdir(parents=True, exist_ok=True)
     codex_output: Path | None = None
     validator: Draft202012Validator | None = None
+    codex_validator: Draft202012Validator | None = None
     published = False
     briefing: dict[str, Any]
     try:
@@ -472,6 +510,7 @@ def run_symbol_briefing(
             prompt_file.write_text(prompt, encoding="utf-8")
         try:
             validator = _schema_validator(schema_file)
+            codex_validator = _schema_validator(codex_schema_file)
             parts = _command_parts(command_setting)
             if not _executable_available(parts):
                 raise BriefingUnavailable(f"Codex executable is unavailable: {parts[0]}")
@@ -481,7 +520,7 @@ def run_symbol_briefing(
             codex_output = _temporary_codex_output(raw_file)
             command = build_codex_command(
                 parts,
-                schema_file=schema_file,
+                schema_file=codex_schema_file,
                 output_file=codex_output,
             )
             stdout = _run_codex(
@@ -494,6 +533,12 @@ def run_symbol_briefing(
             file_output = codex_output.read_text(encoding="utf-8")
             output = file_output if file_output.strip() else stdout
             briefing = parse_briefing_json(output)
+            _validate_briefing(
+                briefing,
+                codex_validator,
+                source="Codex structured output",
+            )
+            briefing = _normalize_codex_briefing(symbol, briefing)
             _validate_briefing(briefing, validator, source="Codex briefing")
             briefing["_provider"] = {"name": "codex", "status": "codex"}
             _write_json(raw_file, briefing)

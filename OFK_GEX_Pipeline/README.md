@@ -39,7 +39,8 @@ Repository-wide ignore rules live in the root `.gitignore`.
 ```
 
 Codex briefing publication is optional and isolated from raw market-data
-generation. A successful Codex result is validated against
+generation. The CLI response is constrained by the closed Structured Outputs
+contract in `schemas/codex_output.schema.json`, then validated locally against
 `schemas/briefing.schema.json` and atomically published. If Codex is
 unavailable, the adapter atomically records a complete raw-data fallback in its
 diagnostic file. A previous schema-valid briefing remains untouched; on a first

@@ -11,9 +11,9 @@ ATAS indicators and Python pipeline for trading the E-mini Nasdaq-100 (NQ) and E
 ## Current macOS migration status
 
 The Python data pipeline and Codex briefing adapter are the portable integration
-boundary for macOS, Linux, and Windows. Phase 2 hardening is in progress on the
-`phase-1-3-mac-adoption` branch; do not treat it as accepted until the automated
-checks and the external Codex NQ/ES acceptance runs have passed.
+boundary for macOS, Linux, and Windows. Phase 2 hardening is accepted on the
+`phase-1-3-mac-adoption` branch: the automated macOS gates and temporary,
+read-only external Codex acceptance runs for both NQ and ES pass.
 
 The original full ATAS indicator remains Windows-oriented while its WPF
 dashboard and replay UI are being separated. Phase 1 includes a small native

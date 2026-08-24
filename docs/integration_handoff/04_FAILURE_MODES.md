@@ -141,7 +141,8 @@ JSON.
 - If JSON parsing fails on the consumer side, that is a concurrent read case → retry in 1 second.
 
 Briefing publication is stricter: Codex writes to a unique same-directory
-temporary file, the adapter parses and locally validates the result against the
-briefing schema, and only then atomically replaces the stable briefing. Codex
+temporary file, the adapter validates the result against both the closed Codex
+output schema and the local published briefing schema, and only then atomically
+replaces the stable briefing. Codex
 failures and invalid results cannot overwrite a previous valid briefing, and
 temporary files are removed on both success and failure.

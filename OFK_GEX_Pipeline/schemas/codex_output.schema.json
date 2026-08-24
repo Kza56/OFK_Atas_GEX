@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "OFK GEX Codex structured output",
+  "description": "Closed response schema passed to Codex CLI. The unused symbol-specific price fields must be null and are removed before publication.",
+  "type": "object",
+  "properties": {
+    "date": { "type": "string" },
+    "trade_date": { "type": "string" },
+    "generation_time": { "type": "string" },
+    "spot_nq": { "type": ["number", "null"] },
+    "spot_es": { "type": ["number", "null"] },
+    "regime": {
+      "type": "object",
+      "properties": {
+        "gex_label": { "type": "string", "enum": ["positive", "negative"] },
+        "total_gex_B": { "type": ["number", "null"] },
+        "total_vex_B": { "type": ["number", "null"] },
+        "ivx_intraday_pct": { "type": ["number", "null"] },
+        "ivr_intraday_pct": { "type": ["number", "null"] },
+        "ivr_status": {
+          "type": "string",
+          "enum": ["ok", "partial", "insufficient"]
+        },
+        "skew_25d_intraday_vp": { "type": ["number", "null"] },
+        "term_intraday_regime": {
+          "type": "string",
+          "enum": ["contango", "backwardation", "flat", "unknown"]
+        },
+        "term_intraday_slope_vp": { "type": ["number", "null"] },
+        "gamma_zone": {
+          "type": "string",
+          "enum": [
+            "bullish_squeeze",
+            "positive",
+            "transition",
+            "negative",
+            "bearish_squeeze",
+            "unknown"
+          ]
+        },
+        "vol_implication": { "type": "string" }
+      },
+      "required": [
+        "gex_label",
+        "total_gex_B",
+        "total_vex_B",
+        "ivx_intraday_pct",
+        "ivr_intraday_pct",
+        "ivr_status",
+        "skew_25d_intraday_vp",
+        "term_intraday_regime",
+        "term_intraday_slope_vp",
+        "gamma_zone",
+        "vol_implication"
+      ],
+      "additionalProperties": false
+    },
+    "bias": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": ["bullish", "bearish", "neutral"]
+        },
+        "conviction": {
+          "type": "string",
+          "enum": ["low", "moderate", "high"]
+        },
+        "reason": { "type": "string" }
+      },
+      "required": ["direction", "conviction", "reason"],
+      "additionalProperties": false
+    },
+    "levels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "gamma_flip",
+              "vol_trigger",
+              "call_wall",
+              "put_wall",
+              "risk_pivot",
+              "vanna_flip",
+              "charm_magnet",
+              "max_pain",
+              "expected_move_high",
+              "expected_move_low",
+              "call_wall_intraday",
+              "put_wall_intraday",
+              "top_oi_intraday_1",
+              "top_oi_intraday_2",
+              "top_oi_intraday_3",
+              "max_pain_0dte",
+              "pin_strike_0dte",
+              "charm_magnet_0dte",
+              "c_trans_intraday",
+              "p_trans_intraday",
+              "dex_plus_intraday",
+              "dex_minus_intraday"
+            ]
+          },
+          "approx_price_nq": { "type": ["number", "null"] },
+          "approx_price_es": { "type": ["number", "null"] },
+          "spot_distance_pct": { "type": "number" },
+          "dealer_behavior": { "type": "string" }
+        },
+        "required": [
+          "type",
+          "approx_price_nq",
+          "approx_price_es",
+          "spot_distance_pct",
+          "dealer_behavior"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "rth_plan": {
+      "type": "object",
+      "properties": {
+        "buy_zone": { "type": "number" },
+        "sell_zone": { "type": "number" },
+        "bullish_invalidation": { "type": "number" },
+        "bearish_invalidation": { "type": "number" },
+        "logic": { "type": "string" }
+      },
+      "required": [
+        "buy_zone",
+        "sell_zone",
+        "bullish_invalidation",
+        "bearish_invalidation",
+        "logic"
+      ],
+      "additionalProperties": false
+    },
+    "risk_alerts": {
+      "type": "array",
+      "items": { "type": "string" },
+      "maxItems": 3
+    },
+    "meta_context": {
+      "type": "object",
+      "properties": {
+        "vix": { "type": ["number", "null"] },
+        "vix_regime": {
+          "type": "string",
+          "enum": ["low", "normal", "elevated", "extreme", "unknown"]
+        },
+        "vix_term": {
+          "type": "string",
+          "enum": ["backwardation", "flat", "contango", "unknown"]
+        },
+        "vix_dod_change": { "type": ["number", "null"] },
+        "macro_in_blackout": { "type": "boolean" },
+        "macro_next_event": { "type": ["string", "null"] },
+        "macro_minutes_to_next": { "type": "number" },
+        "data_quality": {
+          "type": "string",
+          "enum": ["ok", "partial", "error"]
+        },
+        "interpretation": { "type": "string" }
+      },
+      "required": [
+        "vix",
+        "vix_regime",
+        "vix_term",
+        "vix_dod_change",
+        "macro_in_blackout",
+        "macro_next_event",
+        "macro_minutes_to_next",
+        "data_quality",
+        "interpretation"
+      ],
+      "additionalProperties": false
+    },
+    "one_line_summary": { "type": "string" }
+  },
+  "required": [
+    "date",
+    "trade_date",
+    "generation_time",
+    "spot_nq",
+    "spot_es",
+    "regime",
+    "bias",
+    "levels",
+    "rth_plan",
+    "risk_alerts",
+    "meta_context",
+    "one_line_summary"
+  ],
+  "additionalProperties": false
+}

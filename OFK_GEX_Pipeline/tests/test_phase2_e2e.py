@@ -12,6 +12,25 @@ from jsonschema import Draft202012Validator
 PIPELINE_ROOT = Path(__file__).parent.parent
 SAMPLES_DIR = PIPELINE_ROOT / "data" / "samples"
 SCHEMA_FILE = PIPELINE_ROOT / "schemas" / "briefing.schema.json"
+CODEX_SCHEMA_FILE = PIPELINE_ROOT / "schemas" / "codex_output.schema.json"
+
+
+def _assert_structured_output_objects_are_closed(schema: object) -> None:
+    if isinstance(schema, dict):
+        if schema.get("type") == "object":
+            assert schema.get("additionalProperties") is False
+            assert set(schema.get("required", [])) == set(schema.get("properties", {}))
+        for value in schema.values():
+            _assert_structured_output_objects_are_closed(value)
+    elif isinstance(schema, list):
+        for value in schema:
+            _assert_structured_output_objects_are_closed(value)
+
+
+def test_codex_cli_schema_uses_closed_required_objects():
+    schema = json.loads(CODEX_SCHEMA_FILE.read_text(encoding="utf-8"))
+    Draft202012Validator.check_schema(schema)
+    _assert_structured_output_objects_are_closed(schema)
 
 
 @pytest.mark.parametrize("symbol", ["NQ", "ES"])
